@@ -1,0 +1,14 @@
+
+    
+    {
+        "id" : 1,
+        "name" : "Burger King",
+        "items" : 
+        {
+            "burger" : 4,
+            "fries" : 3,
+            "drink" : 2
+        }
+    }
+
+
