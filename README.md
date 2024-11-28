@@ -1,10 +1,9 @@
 # SDLE Second Assignment
 
-SDLE Second Assignment of group T&lt;m&gt;&lt;n&gt;G&lt;p&gt;&lt;q&gt;.
+SDLE Second Assignment of group T01G14.
 
 Group members:
 
-1. &lt;first name&gt; &lt;family name&gt; (&lt;email address&gt;)
-2. &lt;first name&gt; &lt;family name&gt; (&lt;email address&gt;)
-3. &lt;first name&gt; &lt;family name&gt; (&lt;email address&gt;)
-4. &lt;first name&gt; &lt;family name&gt; (&lt;email address&gt;)
+1. Luís Vieira Relvas up202108661@edu.fe.up.pt
+2. Rodrigo Campos Rodrigues up202108847@edu.fe.up.pt
+3. Wallen Marcos Ribeiro up202109260@edu.fe.up.pt
