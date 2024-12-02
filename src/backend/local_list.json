@@ -1,12 +1,5 @@
 [
     {
-        "id": 1,
-        "name": "mc",
-        "items": {
-            "carne": 2
-        }
-    },
-    {
         "id": 2,
         "name": "mc",
         "items": {
@@ -25,13 +18,6 @@
         "name": "mc",
         "items": {
             "caca": 2
-        }
-    },
-    {
-        "id": 3,
-        "name": "ac",
-        "items": {
-            "teste": 17
         }
     }
 ]

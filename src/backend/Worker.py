@@ -37,6 +37,19 @@ def worker_task(ident):
                         break
                 response = {"status": "success", "list": list}
             elif action == "update_list":
+
+                with open("local_list.json", "r") as file: 
+                    lists = json.load(file) 
+                for list_aux in lists: 
+                    if(int(list_aux["id"]) == int(list["id"])): 
+                        list_aux["items"] = list["items"]
+                        break
+
+                print(f"Updating list: {list['items']}")
+                
+                with open("local_list.json", "w") as file:
+                    json.dump(lists, file, indent=4)
+                
                 response = {"status": "success", "message": f"List updated to: {list['items']}"}
             elif action == "create_list": 
                 with open("local_list.json", "r") as file:
@@ -50,6 +63,21 @@ def worker_task(ident):
                     json.dump(existing_lists, file, indent=4)
 
                 response = {"status" :"success", "message": f"List created: {list['items']}"}   
+            
+            elif action =="delete_list": 
+                with open("local_list.json", "r") as file: 
+                    existing_lists = json.load(file)
+                
+                for list_aux in existing_lists: 
+                    if int(list_aux["id"]) == int(list["id"]): 
+                        print(f"Deleting list: {list['id']}")
+                        existing_lists.remove(list_aux)
+                        break
+            
+                with open("local_list.json", "w") as file:
+                    json.dump(existing_lists, file, indent=4)
+
+                response = {"status": "success", "message": f"List deleted: {list['id']}"}
             else:
                 response = {"status": "error", "message": "Invalid action"}
         except Exception as e:

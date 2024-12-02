@@ -75,6 +75,19 @@ def client_update_list(ident):
     # Update the quantity of the item
     shopping_list['items'][item_name] = item_quantity
 
+    # Change the quantity of the item in the local list
+    json_file = 'local_list_' + ident + ".json"
+    with open(json_file, 'r') as file:
+        existing_data = json.load(file)
+    
+    for list_aux in existing_data:
+        if int(list_aux["id"]) == int(shopping_list["id"]):
+            list_aux["items"] = shopping_list["items"]
+            break
+    
+    with open(json_file, 'w') as file:
+        json.dump(existing_data, file, indent=4)
+
 
     print(f"Client-{ident} updated shopping list: {shopping_list}")
     
@@ -89,6 +102,39 @@ def client_update_list(ident):
     print("{}: {}".format(socket.identity.decode("ascii"),
                           reply.decode("utf-8")))
 
+
+def client_remove_list(ident): 
+    socket = zmq.Context().socket(zmq.REQ)
+    socket.identity = u"Client-{}".format(ident).encode("ascii")
+    socket.connect("ipc://frontend.ipc")
+
+    # Ask for a specific id
+    list_id_input = input("Please enter the id of the list you want to remove :")
+    list_to_send = {}    
+    # Read all the lists from the local file
+    json_file = 'local_list_' + ident + ".json"
+    with open(json_file, 'r') as file:
+        existing_data = json.load(file)
+    
+    # Iterate over the lists until found the one to remove
+    for list_aux in existing_data:
+        if int(list_aux["id"]) == int(list_id_input):
+            list_to_send = list_aux
+            existing_data.remove(list_aux)
+            break
+    
+    # Save without the removed list
+    with open(json_file, 'w') as file:
+        json.dump(existing_data, file, indent=4)
+
+    # Send a request with the list to remove
+    request = {"action": "delete_list", "list": list_to_send}
+    socket.send(json.dumps(request).encode("utf-8"))
+
+    # Get reply from load balancer (response from worker)
+    reply = socket.recv()
+    print("{}: {}".format(socket.identity.decode("ascii"),
+                          reply.decode("utf-8")))
 
 def client_create_list(ident): 
     socket = zmq.Context().socket(zmq.REQ)
@@ -112,4 +158,4 @@ def client_create_list(ident):
 
 if __name__ == '__main__':
     ident = sys.argv[1] 
-    client_create_list(ident)
+    client_remove_list(ident)
