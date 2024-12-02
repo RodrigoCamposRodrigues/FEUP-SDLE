@@ -1,0 +1,23 @@
+[
+    {
+        "id": 1,
+        "name": "mc",
+        "items": {
+            "carne": 2
+        }
+    },
+    {
+        "id": 2,
+        "name": "mc",
+        "items": {
+            "carne": 1
+        }
+    },
+    {
+        "id": 3,
+        "name": "ac",
+        "items": {
+            "teste": 17
+        }
+    }
+]

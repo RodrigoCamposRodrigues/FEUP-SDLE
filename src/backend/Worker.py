@@ -1,6 +1,8 @@
 from __future__ import print_function
 import zmq
 import json
+import sys
+
 
 def worker_task(ident):
     context = zmq.Context()
@@ -26,10 +28,28 @@ def worker_task(ident):
             list = request_data.get("list")
 
             if action == "get_list":
+                # Load the list from the json file
+                with open("local_list.json", "r") as file:
+                    lists = json.load(file)
+                for list_aux in lists:
+                    if int(list_aux["id"]) == int(request_data.get("list_id")):
+                        list = list_aux
+                        break
                 response = {"status": "success", "list": list}
             elif action == "update_list":
                 response = {"status": "success", "message": f"List updated to: {list['items']}"}
-                # 
+            elif action == "create_list": 
+                with open("local_list.json", "r") as file:
+                    existing_lists = json.load(file)
+                
+                if isinstance(existing_lists, dict): 
+                    existing_lists  =json.load(file)
+                
+                existing_lists.append(list)
+                with open("local_list.json", "w") as file:
+                    json.dump(existing_lists, file, indent=4)
+
+                response = {"status" :"success", "message": f"List created: {list['items']}"}   
             else:
                 response = {"status": "error", "message": "Invalid action"}
         except Exception as e:
@@ -37,3 +57,8 @@ def worker_task(ident):
 
         # Send response back to the backend
         socket.send_multipart([address, b"", json.dumps(response).encode("utf-8")])
+
+
+if __name__ == '__main__':
+    ident = sys.argv[1] 
+    worker_task(ident)

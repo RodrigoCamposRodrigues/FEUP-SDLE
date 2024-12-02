@@ -1,0 +1,16 @@
+[
+    {
+        "id": 3,
+        "name": "burguerkin",
+        "items": {
+            "foca": 2
+        }
+    },
+    {
+        "id": 4,
+        "name": "mc",
+        "items": {
+            "caca": 2
+        }
+    }
+]

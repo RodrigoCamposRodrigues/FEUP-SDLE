@@ -4,8 +4,6 @@ import zmq
 import Worker
 import json 
 
-NBR_WORKERS = 2  # Number of workers
-
 
 def main():
     count = 2
@@ -17,14 +15,6 @@ def main():
     
     backend = context.socket(zmq.ROUTER) 
     backend.bind("ipc://backend.ipc")
-
-    def start_worker(task, *args):
-        process = multiprocessing.Process(target=task, args=args)
-        process.daemon = True
-        process.start()
-
-    for i in range(NBR_WORKERS):
-        start_worker(Worker.worker_task, i)
 
     # Poller for load balancer
     poller = zmq.Poller()
