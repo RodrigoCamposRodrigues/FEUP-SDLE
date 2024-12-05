@@ -114,13 +114,14 @@ def client_update_list(ident):
 
     times_inc = input("Enter the number of times you want to increment the item: ")
     for i in range(int(times_inc)):
-        global_counter_list[shopping_list["id"]].increment_value(item_name)
+        global_counter_list[shopping_list["id"]].increment_value(ident,item_name)
 
     times_dec = input("Enter the number of times you want to decrement the item: ")
     for i in range(int(times_dec)):
-        global_counter_list[shopping_list["id"]].decrement_value(item_name)
+        global_counter_list[shopping_list["id"]].decrement_value(ident,item_name)
 
-    print(f"The vector clocks are {global_counter_list[shopping_list["id"]].vector_clocks}")
+
+    print(f"The vector clocks are {global_counter_list[shopping_list["id"]].crdt_states}")
 
     # Change the quantity of the item in the local list
     existing_data  = read_file(ident)
@@ -138,7 +139,7 @@ def client_update_list(ident):
     print(f"Client-{ident} updated shopping list: {global_counter_list[shopping_list["id"]].list}")
     # Send updated list to the load balancer
     print(f"Sending updated list to the load balancer {global_counter_list[shopping_list["id"]].to_dict()}")
-    request = {"action": "update_list", "list_id": global_counter_list[shopping_list["id"]].to_dict()["id"], "list": global_counter_list[shopping_list["id"]].to_dict()["list"], "vector_clocks": global_counter_list[shopping_list["id"]].to_dict()["vector_clocks"]}
+    request = {"action": "update_list", "list_id": global_counter_list[shopping_list["id"]].to_dict()["id"], "list": global_counter_list[shopping_list["id"]].to_dict()["list"], "crdt_states": global_counter_list[shopping_list["id"]].to_dict()["crdt_states"]}
 
     socket.send(json.dumps(request).encode("utf-8"))
     

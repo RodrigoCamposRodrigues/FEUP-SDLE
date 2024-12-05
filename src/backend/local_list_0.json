@@ -3,7 +3,8 @@
         "id": 87184592107225023994031495768746977192,
         "name": "Burguer King",
         "items": {
-            "carne": 0
+            "carne": 2,
+            "alface": 2
         }
     }
 ]
