@@ -2,18 +2,19 @@ from __future__ import print_function
 import multiprocessing
 import zmq
 import Worker
-import json 
+import json
+from HashRing import HashRing
 
 
 def main():
-    count = 2
     backend_ready = False
-    workers = []
+    workers = set()  # Use a set to manage workers dynamically
+    ring = HashRing(workers)
     context = zmq.Context()
-    frontend = context.socket(zmq.ROUTER) 
+    frontend = context.socket(zmq.ROUTER)
     frontend.bind("ipc://frontend.ipc")
-    
-    backend = context.socket(zmq.ROUTER) 
+
+    backend = context.socket(zmq.ROUTER)
     backend.bind("ipc://backend.ipc")
 
     # Poller for load balancer
@@ -36,7 +37,9 @@ def main():
             request = backend.recv_multipart()
             print(f"Received response from worker: {request}")
             worker, empty, client = request[:3]
-            workers.append(worker)
+            workers.add(worker.decode("utf-8"))
+            ring = HashRing(workers)  
+            print(f"Workers: {workers}")
             if workers and not backend_ready:
                 poller.register(frontend, zmq.POLLIN)
                 backend_ready = True
@@ -46,9 +49,12 @@ def main():
 
         # Handle client requests on the frontend
         if frontend in sockets:
-            client, empty,request = frontend.recv_multipart()
-            print("Received request from client: ", request)
-            backend.send_multipart(["Worker-0".encode("utf-8"), b"", client, b"", request])
+            client, empty, request = frontend.recv_multipart()
+            request_data = json.loads(request.decode("utf-8"))
+            list_id = request_data.get("list_id", "default_key")
+            assigned_worker = ring.get_node(str(list_id))
+            print(f"Assigned worker: {assigned_worker} for list ID: {list_id}")
+            backend.send_multipart([assigned_worker.encode("utf-8"), b"", client, b"", request])
             if not workers:
                 poller.unregister(frontend)
                 backend_ready = False

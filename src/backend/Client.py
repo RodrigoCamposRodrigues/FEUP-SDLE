@@ -3,8 +3,6 @@ import zmq
 import json
 import sys
 
-
-
 # Get the shopping list from the local_list.json file 
 def read_list(ident, id):
     json_file = 'local_list_'+ ident + ".json" 
@@ -158,4 +156,4 @@ def client_create_list(ident):
 
 if __name__ == '__main__':
     ident = sys.argv[1] 
-    client_remove_list(ident)
+    client_update_list(ident)
