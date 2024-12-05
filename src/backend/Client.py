@@ -2,6 +2,22 @@ from __future__ import print_function
 import zmq
 import json
 import sys
+from GlobalCounter import GlobalCounter
+import uuid
+
+
+global_counter_list = {}
+
+
+def check_lists_in_global_counter(ident):
+    file = "local_list_" + ident + ".json"
+    with open(file,'r') as file:
+        shopping_lists = json.load(file)
+
+    for shopping_list in shopping_lists: 
+        if shopping_list["id"] not in global_counter_list: 
+            print(f"Added list {shopping_list['id']} to the global counter")
+            global_counter_list[shopping_list["id"]] = GlobalCounter(shopping_list["id"], shopping_list)
 
 # Get the shopping list from the local_list.json file 
 def read_list(ident, id):
@@ -28,30 +44,48 @@ def create_list(ident):
     
 
     json_file = 'local_list_' + ident + ".json"
+    
     with open(json_file, 'r') as file:
         existing_data = json.load(file)
+    if existing_data: 
+        
+        if isinstance(existing_data, dict):
+            existing_data = [existing_data]
 
-    if isinstance(existing_data, dict):
-        existing_data = [existing_data]
+        shopping_list["id"] = uuid.uuid4().int
+        
+        existing_data.append(shopping_list)
+        
+        with open(json_file, 'w') as file:
+            json.dump(existing_data, file, indent=4)
+    
+    else: 
+        shopping_list["id"] = uuid.uuid4().int
 
-    shopping_list["id"] = len(existing_data) + 1
-    
-    existing_data.append(shopping_list)
-    
-    with open(json_file, 'w') as file:
-        json.dump(existing_data, file, indent=4)
+        with open(json_file, "w") as file: 
+            json.dump(shopping_list, file, indent=4)
     
     print("Shopping list created successfully!")
     return shopping_list
 
-def client_update_list(ident):
-    socket = zmq.Context().socket(zmq.REQ) 
-    socket.identity = u"Client-{}".format(ident).encode("ascii")
-    socket.connect("ipc://frontend.ipc")
 
+def read_file(ident): 
+    json_file = "local_list_" + ident + ".json"
+    with open(json_file, 'r') as file:
+        data = json.load(file)
+
+    return data
+
+def write_file(ident, data): 
+    json_file = "local_list_" + ident + ".json"
+    with open(json_file, 'w') as file:
+        json.dump(data, file, indent=4)
+
+def client_update_list(ident):
+    socket = create_socket(ident)
     # Ask for a specific id 
     list_id_input = input("Please enter the id of the list you want to update :")
-    # Client requests a specific list
+    # Client requests a specific list CHANGE THIS
     shopping_list = read_list(ident, int(list_id_input))
 
     # Make a request to the loadbalancer to get the list
@@ -60,46 +94,64 @@ def client_update_list(ident):
         request = {"action": "get_list", "list_id": list_id_input}
         socket.send(json.dumps(request).encode("utf-8"))
         reply = socket.recv()
-        shopping_list = json.loads(reply.decode("utf-8"))
-        shopping_list = shopping_list['list']
+        reply_decoded = json.loads(reply.decode("utf-8"))
+        shopping_list = reply_decoded["list"]
+
+        existing_data = read_file(ident)
+
+        existing_data.append(shopping_list)
+        
+        write_file(ident, existing_data)
+
+        shopping_list = read_list(ident, int(list_id_input))
+        check_lists_in_global_counter(ident)
 
     # List all the items that are in the shopping list 
     print(f"Client-{ident} shopping list: {shopping_list}")
 
     # Ask the user to update the quantity of an item
     item_name = input("Enter the name of the item you want to update: ")
-    item_quantity = int(input("Enter the new quantity: "))
 
-    # Update the quantity of the item
-    shopping_list['items'][item_name] = item_quantity
+    times_inc = input("Enter the number of times you want to increment the item: ")
+    for i in range(int(times_inc)):
+        global_counter_list[shopping_list["id"]].increment_value(item_name)
+
+    times_dec = input("Enter the number of times you want to decrement the item: ")
+    for i in range(int(times_dec)):
+        global_counter_list[shopping_list["id"]].decrement_value(item_name)
+
+    print(f"The vector clocks are {global_counter_list[shopping_list["id"]].vector_clocks}")
 
     # Change the quantity of the item in the local list
-    json_file = 'local_list_' + ident + ".json"
-    with open(json_file, 'r') as file:
-        existing_data = json.load(file)
+    existing_data  = read_file(ident)
     
-    for list_aux in existing_data:
-        if int(list_aux["id"]) == int(shopping_list["id"]):
-            list_aux["items"] = shopping_list["items"]
+    print(f"The global counter list is {global_counter_list[shopping_list['id']].list}")
+
+    for cart in existing_data: 
+        if cart["id"] == shopping_list["id"]:
+            print(f"Found")
+            cart["items"][item_name] = global_counter_list[shopping_list["id"]].list["items"][item_name]
             break
-    
-    with open(json_file, 'w') as file:
-        json.dump(existing_data, file, indent=4)
 
-
-    print(f"Client-{ident} updated shopping list: {shopping_list}")
-    
+    write_file(ident, existing_data)
+        
+    print(f"Client-{ident} updated shopping list: {global_counter_list[shopping_list["id"]].list}")
     # Send updated list to the load balancer
-    request = {"action": "update_list", "list_id": shopping_list['id'], "list": shopping_list}
+    print(f"Sending updated list to the load balancer {global_counter_list[shopping_list["id"]].to_dict()}")
+    request = {"action": "update_list", "list_id": global_counter_list[shopping_list["id"]].to_dict()["id"], "list": global_counter_list[shopping_list["id"]].to_dict()["list"], "vector_clocks": global_counter_list[shopping_list["id"]].to_dict()["vector_clocks"]}
 
-    # Send the request to the load balancer (ROUTER)
     socket.send(json.dumps(request).encode("utf-8"))
-
-    # Get reply from load balancer (response from worker)
+    
     reply = socket.recv()
     print("{}: {}".format(socket.identity.decode("ascii"),
                           reply.decode("utf-8")))
 
+
+def create_socket(ident): 
+    socket = zmq.Context().socket(zmq.REQ)
+    socket.identity = u"Client-{}".format(ident).encode("ascii")
+    socket.connect("ipc://frontend.ipc")
+    return socket
 
 def client_remove_list(ident): 
     socket = zmq.Context().socket(zmq.REQ)
@@ -133,17 +185,21 @@ def client_remove_list(ident):
     reply = socket.recv()
     print("{}: {}".format(socket.identity.decode("ascii"),
                           reply.decode("utf-8")))
+    
+    # Remove the list from the global_counter_list
+    del global_counter_list[int(list_id_input)]
 
 def client_create_list(ident): 
     socket = zmq.Context().socket(zmq.REQ)
     socket.identity = u"Client-{}".format(ident).encode("ascii")
     socket.connect("ipc://frontend.ipc")
-
     # Client requests a specific list
-    shopping_lists = create_list(ident)
+    shopping_list = create_list(ident)
+
+    new_list = GlobalCounter(shopping_list["id"],shopping_list)
 
     # Send updated list to the load balancer
-    request = {"action": "create_list", "list_id": shopping_lists['id'], "list": shopping_lists}
+    request = {"action": "create_list", "list_id": shopping_list['id'], "list": shopping_list}
 
     # Send the request to the load balancer (ROUTER)
     socket.send(json.dumps(request).encode("utf-8"))
@@ -154,6 +210,19 @@ def client_create_list(ident):
                           reply.decode("utf-8")))
 
 
+def send_lists_to_load_balancer():
+    return global_counter_list
+
+
 if __name__ == '__main__':
     ident = sys.argv[1] 
-    client_update_list(ident)
+    while(1): 
+        check_lists_in_global_counter(ident)
+        # Ask for a number between 1 and 4 
+        input_user = int(input("Enter the action you want to do: "))
+        if input_user == 1: 
+            client_create_list(ident)
+        elif input_user == 2: 
+            client_update_list(ident)
+        elif input_user == 3: 
+            client_remove_list(ident)

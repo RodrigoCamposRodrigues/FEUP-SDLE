@@ -2,7 +2,17 @@ from __future__ import print_function
 import zmq
 import json
 import sys
+from GlobalCounter import GlobalCounter
 
+global_counter_list = {}
+
+def check_lists_in_global_counter(ident):
+    with open("local_list.json",'r') as file:
+        shopping_lists = json.load(file)
+
+    for shopping_list in shopping_lists: 
+        if shopping_list["id"] not in global_counter_list: 
+            global_counter_list[shopping_list["id"]] = GlobalCounter(shopping_list["id"], shopping_list)
 
 def worker_task(ident):
     context = zmq.Context()
@@ -26,6 +36,8 @@ def worker_task(ident):
             print("The requested data is ", request_data)
             action = request_data.get("action")
             list = request_data.get("list")
+            vector_clocks = request_data.get("vector_clocks")
+            print(f"THe requested list is {list}")
 
             if action == "get_list":
                 # Load the list from the json file
@@ -37,20 +49,29 @@ def worker_task(ident):
                         break
                 response = {"status": "success", "list": list}
             elif action == "update_list":
-
                 with open("local_list.json", "r") as file: 
-                    lists = json.load(file) 
-                for list_aux in lists: 
-                    if(int(list_aux["id"]) == int(list["id"])): 
-                        list_aux["items"] = list["items"]
-                        break
+                    lists = json.load(file)
 
-                print(f"Updating list: {list['items']}")
-                
+                check_lists_in_global_counter(ident)
+                print(f"The version2 is {list}")
+                print(f"The vector clocks are {vector_clocks}")
+                print(f"The list id is {list['id']}")   
+                print(f"the global counter list is 2 : {global_counter_list}")
+                print(f"The global counter list is {global_counter_list[list["id"]]}")
+                # Merge the existing list with the received list from the client (request)
+                new_list = global_counter_list[list["id"]].merge_version(list, vector_clocks)
+                print(f"The new updated list is {new_list}")
+                for cart in lists: 
+                    if int(cart["id"]) == int(list["id"]):
+                        print(f"Found")
+                        cart["items"] = new_list["items"]
+                        break
+                print(f"Updating list: {new_list['items']}")
+                # print(f"Updating list: {new_list['items']}")
                 with open("local_list.json", "w") as file:
                     json.dump(lists, file, indent=4)
                 
-                response = {"status": "success", "message": f"List updated to: {list['items']}"}
+                response = {"status": "success", "message": f"List updated to: {new_list["items"]}"}
             elif action == "create_list": 
                 with open("local_list.json", "r") as file:
                     existing_lists = json.load(file)
@@ -81,12 +102,13 @@ def worker_task(ident):
             else:
                 response = {"status": "error", "message": "Invalid action"}
         except Exception as e:
-            response = {"status": "error", "message": f"Failed to process request: {e}"}
+            response = {"status": "error", "message": f"Failed to process request: {e} on action {action}"}
 
         # Send response back to the backend
         socket.send_multipart([address, b"", json.dumps(response).encode("utf-8")])
 
 
 if __name__ == '__main__':
-    ident = sys.argv[1] 
+    ident = sys.argv[1]
+    check_lists_in_global_counter(ident)
     worker_task(ident)
