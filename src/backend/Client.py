@@ -11,7 +11,7 @@ global_counter_list = {}
 
 def check_lists_in_global_counter(ident):
     file = "local_list_" + ident + ".json"
-    with open(file,'r') as file:
+    with open(file,'r+') as file:
         shopping_lists = json.load(file)
 
     for shopping_list in shopping_lists: 
