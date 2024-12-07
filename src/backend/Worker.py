@@ -13,6 +13,21 @@ def check_lists_in_global_counter(ident):
     for shopping_list in shopping_lists: 
         if shopping_list["id"] not in global_counter_list: 
             global_counter_list[shopping_list["id"]] = GlobalCounter(shopping_list["id"], shopping_list)
+            existing_data = read_list(shopping_list["id"])
+            global_counter_list[shopping_list["id"]].list["items"] = existing_data["items"]
+            global_counter_list[shopping_list["id"]].crdt_states = existing_data["crdt_states"]
+
+
+def read_list(id):
+    json_file = 'local_list.json' 
+    with open(json_file, 'r') as file:
+        shopping_lists = json.load(file)
+    
+    shopping_list = {}
+    for shopping_list in shopping_lists:
+        if shopping_list['id'] == id: 
+            return shopping_list
+
 
 def worker_task(ident):
     context = zmq.Context()
@@ -33,11 +48,9 @@ def worker_task(ident):
         #request
         try:
             request_data = json.loads(request.decode("utf-8"))
-            print("The requested data is ", request_data)
             action = request_data.get("action")
             list = request_data.get("list")
             crdt_states = request_data.get("crdt_states")
-            print(f"THe requested list is {list}")
 
             if action == "get_list":
                 # Load the list from the json file
@@ -53,11 +66,6 @@ def worker_task(ident):
                     lists = json.load(file)
 
                 check_lists_in_global_counter(ident)
-                print(f"The version2 is {list}")
-                print(f"The vector clocks are {crdt_states}")
-                print(f"The list id is {list['id']}")   
-                print(f"the global counter list is 2 : {global_counter_list}")
-                print(f"The global counter list is {global_counter_list[list["id"]]}")
                 # Merge the existing list with the received list from the client (request)
                 global_counter_list[list["id"]].list, global_counter_list[list["id"]].crdt_states = global_counter_list[list["id"]].merge_version(list, crdt_states)
                 print(f"The new updated list is {global_counter_list[list["id"]].list}")

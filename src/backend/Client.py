@@ -16,10 +16,8 @@ def check_lists_in_global_counter(ident):
 
     for shopping_list in shopping_lists: 
         if shopping_list["id"] not in global_counter_list: 
-            print(f"Added list {shopping_list['id']} to the global counter")
             global_counter_list[shopping_list["id"]] = GlobalCounter(shopping_list["id"], shopping_list)
             existing_data = read_list(ident, shopping_list["id"])
-            print(f"Existing data is {existing_data}")
             global_counter_list[shopping_list["id"]].list["items"] = existing_data["items"]
             global_counter_list[shopping_list["id"]].crdt_states = existing_data["crdt_states"]
 
@@ -32,13 +30,12 @@ def read_list(ident, id):
     
     shopping_list = {}
     for shopping_list in shopping_lists:
-        print(f"Shopping list: {shopping_list}") 
         if shopping_list['id'] == id: 
             return shopping_list
     
 def create_list(ident): 
     shopping_list = {"id": None, "name": "", "items": {}}
-    
+    print(f"------------------------------------------------------")
     shopping_list["name"] = input("Enter the name of the list: ")
     num_items = int(input("Enter the number of items in the list: "))
     
@@ -71,6 +68,7 @@ def create_list(ident):
             json.dump(shopping_list, file, indent=4)
     
     print("Shopping list created successfully!")
+    print(f"------------------------------------------------------")
     return shopping_list
 
 
@@ -88,6 +86,13 @@ def write_file(ident, data):
 
 def client_update_list(ident):
     socket = create_socket(ident)
+    overview = read_file(ident) 
+    print(f"------------------------------------------------------")
+    print(f"Client-{ident} shopping lists: ")
+    for list in overview: 
+        print(f"List id: {list['id']} - List name: {list['name']}")
+        print(f"Items: {list['items']}")
+    print(f"------------------------------------------------------")
     # Ask for a specific id 
     list_id_input = input("Please enter the id of the list you want to update :")
     # Client requests a specific list CHANGE THIS
@@ -111,9 +116,6 @@ def client_update_list(ident):
         shopping_list = read_list(ident, int(list_id_input))
         check_lists_in_global_counter(ident)
 
-    # List all the items that are in the shopping list 
-    print(f"Client-{ident} shopping list: {shopping_list}")
-
     # Ask the user to update the quantity of an item
     item_name = input("Enter the name of the item you want to update: ")
 
@@ -124,15 +126,12 @@ def client_update_list(ident):
     times_dec = input("Enter the number of times you want to decrement the item: ")
     for i in range(int(times_dec)):
         global_counter_list[shopping_list["id"]].decrement_value(ident,item_name)
-
-
-    print(f"The vector clocks are {global_counter_list[shopping_list["id"]].crdt_states}")
-
-    
         
-    print(f"Client-{ident} updated shopping list: {global_counter_list[shopping_list["id"]].list}")
     # Send updated list to the load balancer
-    print(f"Sending updated list to the load balancer {global_counter_list[shopping_list["id"]].to_dict()}")
+    print(f"---------------------------------------------------")
+    print(f"The updated list {global_counter_list[shopping_list['id']].list["name"]}")
+    print(f"Items: {global_counter_list[shopping_list['id']].list["items"]}")
+    print(f"---------------------------------------------------")
     request = {"action": "update_list", "list_id": global_counter_list[shopping_list["id"]].to_dict()["id"], "list": global_counter_list[shopping_list["id"]].to_dict()["list"], "crdt_states": global_counter_list[shopping_list["id"]].to_dict()["crdt_states"]}
 
     # Ask the user if he wants to send the updated list to the load balancer 
@@ -152,12 +151,9 @@ def client_update_list(ident):
     # Change the quantity of the item in the local list
     existing_data  = read_file(ident)
     
-    print(f"The global counter list is {global_counter_list[shopping_list['id']].list}")
-
     for cart in existing_data: 
         if cart["id"] == shopping_list["id"]:
-            print(f"Found")
-            cart["items"][item_name] = global_counter_list[shopping_list["id"]].list["items"][item_name]
+            cart["items"] = global_counter_list[shopping_list["id"]].list["items"]
             # ensure that the crdt_states are updated
             cart["crdt_states"] = global_counter_list[shopping_list["id"]].crdt_states
             break
@@ -235,11 +231,20 @@ if __name__ == '__main__':
     ident = sys.argv[1] 
     while(1): 
         check_lists_in_global_counter(ident)
+        print(f"---------------------------------")
+        print(f"1. Create a list")
+        print(f"2. Update a list")
+        print(f"3. Remove a list")
+        print(f"4. Exit")
+        print(f"---------------------------------")
         # Ask for a number between 1 and 4 
         input_user = int(input("Enter the action you want to do: "))
+       
         if input_user == 1: 
             client_create_list(ident)
         elif input_user == 2: 
             client_update_list(ident)
         elif input_user == 3: 
             client_remove_list(ident)
+        elif input_user == 4: 
+            break
