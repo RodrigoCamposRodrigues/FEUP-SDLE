@@ -10,7 +10,7 @@ global_counter_list = {}
 
 
 def check_lists_in_global_counter(ident):
-    file = "local_list_" + ident + ".json"
+    file = "client/local_list_" + ident + ".json"
     with open(file,'r+') as file:
         shopping_lists = json.load(file)
 
@@ -26,7 +26,7 @@ def check_lists_in_global_counter(ident):
 
 # Get the shopping list from the local_list.json file 
 def read_list(ident, id):
-    json_file = 'local_list_'+ ident + ".json" 
+    json_file = 'client/local_list_'+ ident + ".json" 
     with open(json_file, 'r') as file:
         shopping_lists = json.load(file)
     
@@ -48,7 +48,7 @@ def create_list(ident):
         shopping_list["crdt_states"] = {}
     
 
-    json_file = 'local_list_' + ident + ".json"
+    json_file = 'client/local_list_' + ident + ".json"
     
     with open(json_file, 'r') as file:
         existing_data = json.load(file)
@@ -75,14 +75,14 @@ def create_list(ident):
 
 
 def read_file(ident): 
-    json_file = "local_list_" + ident + ".json"
+    json_file = "client/local_list_" + ident + ".json"
     with open(json_file, 'r') as file:
         data = json.load(file)
 
     return data
 
 def write_file(ident, data): 
-    json_file = "local_list_" + ident + ".json"
+    json_file = "client/local_list_" + ident + ".json"
     with open(json_file, 'w') as file:
         json.dump(data, file, indent=4)
 
@@ -179,7 +179,7 @@ def client_remove_list(ident):
     list_id_input = input("Please enter the id of the list you want to remove :")
     list_to_send = {}    
     # Read all the lists from the local file
-    json_file = 'local_list_' + ident + ".json"
+    json_file = 'client/local_list_' + ident + ".json"
     with open(json_file, 'r') as file:
         existing_data = json.load(file)
     
