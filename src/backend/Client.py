@@ -18,6 +18,11 @@ def check_lists_in_global_counter(ident):
         if shopping_list["id"] not in global_counter_list: 
             print(f"Added list {shopping_list['id']} to the global counter")
             global_counter_list[shopping_list["id"]] = GlobalCounter(shopping_list["id"], shopping_list)
+            existing_data = read_list(ident, shopping_list["id"])
+            print(f"Existing data is {existing_data}")
+            global_counter_list[shopping_list["id"]].list["items"] = existing_data["items"]
+            global_counter_list[shopping_list["id"]].crdt_states = existing_data["crdt_states"]
+
 
 # Get the shopping list from the local_list.json file 
 def read_list(ident, id):
@@ -39,8 +44,8 @@ def create_list(ident):
     
     for i in range(num_items): 
         item_name = input(f"Enter the name of item {i + 1}: ")
-        item_quantity = int(input(f"Enter the quantity of {item_name}: "))
-        shopping_list["items"][item_name] = item_quantity
+        shopping_list["items"][item_name] = 0
+        shopping_list["crdt_states"] = {}
     
 
     json_file = 'local_list_' + ident + ".json"
@@ -123,6 +128,27 @@ def client_update_list(ident):
 
     print(f"The vector clocks are {global_counter_list[shopping_list["id"]].crdt_states}")
 
+    
+        
+    print(f"Client-{ident} updated shopping list: {global_counter_list[shopping_list["id"]].list}")
+    # Send updated list to the load balancer
+    print(f"Sending updated list to the load balancer {global_counter_list[shopping_list["id"]].to_dict()}")
+    request = {"action": "update_list", "list_id": global_counter_list[shopping_list["id"]].to_dict()["id"], "list": global_counter_list[shopping_list["id"]].to_dict()["list"], "crdt_states": global_counter_list[shopping_list["id"]].to_dict()["crdt_states"]}
+
+    # Ask the user if he wants to send the updated list to the load balancer 
+    send_list = input("Do you want to send the updated list to the load balancer? (y/n): ")
+    if(send_list == "y"): 
+        socket.send(json.dumps(request).encode("utf-8"))
+        
+        reply = socket.recv()
+        reply_decoded = json.loads(reply.decode("utf-8"))
+        crdt_states_server = reply_decoded.get("crdt_states")
+        list_server = reply_decoded.get("list")
+        print(f"Client-{ident} received response from load balancer of crdt_states: {crdt_states_server} and list: {list_server}")
+        # Merge the existing list with the received list from the server
+        global_counter_list[shopping_list["id"]].list, global_counter_list[shopping_list["id"]].crdt_states = global_counter_list[shopping_list["id"]].merge_version(list_server, crdt_states_server)
+        print(f"Client-{ident} updated shopping list: {global_counter_list[shopping_list["id"]].list} with crdt_states {global_counter_list[shopping_list["id"]].crdt_states}")
+
     # Change the quantity of the item in the local list
     existing_data  = read_file(ident)
     
@@ -132,21 +158,11 @@ def client_update_list(ident):
         if cart["id"] == shopping_list["id"]:
             print(f"Found")
             cart["items"][item_name] = global_counter_list[shopping_list["id"]].list["items"][item_name]
+            # ensure that the crdt_states are updated
+            cart["crdt_states"] = global_counter_list[shopping_list["id"]].crdt_states
             break
 
     write_file(ident, existing_data)
-        
-    print(f"Client-{ident} updated shopping list: {global_counter_list[shopping_list["id"]].list}")
-    # Send updated list to the load balancer
-    print(f"Sending updated list to the load balancer {global_counter_list[shopping_list["id"]].to_dict()}")
-    request = {"action": "update_list", "list_id": global_counter_list[shopping_list["id"]].to_dict()["id"], "list": global_counter_list[shopping_list["id"]].to_dict()["list"], "crdt_states": global_counter_list[shopping_list["id"]].to_dict()["crdt_states"]}
-
-    socket.send(json.dumps(request).encode("utf-8"))
-    
-    reply = socket.recv()
-    print("{}: {}".format(socket.identity.decode("ascii"),
-                          reply.decode("utf-8")))
-
 
 def create_socket(ident): 
     socket = zmq.Context().socket(zmq.REQ)

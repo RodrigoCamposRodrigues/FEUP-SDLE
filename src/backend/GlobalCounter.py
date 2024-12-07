@@ -98,9 +98,10 @@ class GlobalCounter:
                 #self.crdt_state[item]["decs"] = crdt_state[item]["decs"]
         
         # Iterate over the crdt_state in order to get all the increments of all users 
-        current_sum_inc = 0
-        current_sum_dec = 0
-        for item in crdt_state: 
+        
+        for item in crdt_state:
+            current_sum_inc = 0
+            current_sum_dec = 0 
             if item not in self.crdt_states:
                 self.crdt_states[item] = {}
             merged_value = 0
@@ -127,7 +128,7 @@ class GlobalCounter:
                 merged_value = current_sum_inc - current_sum_dec
             self.list["items"][item] = merged_value
         print(f"The final list is {self.list}")
-        return self.list
+        return self.list, self.crdt_states
     
 
     def print_list(self): 
