@@ -126,14 +126,14 @@ def client_update_list(ident):
         global_counter_list[shopping_list["id"]].decrement_value(ident,item_name)
 
 
-    print(f"The vector clocks are {global_counter_list[shopping_list["id"]].crdt_states}")
+    print(f"The vector clocks are {global_counter_list[shopping_list['id']].crdt_states}")
 
     
         
-    print(f"Client-{ident} updated shopping list: {global_counter_list[shopping_list["id"]].list}")
+    print(f"Client-{ident} updated shopping list: {global_counter_list[shopping_list['id']].list}")
     # Send updated list to the load balancer
-    print(f"Sending updated list to the load balancer {global_counter_list[shopping_list["id"]].to_dict()}")
-    request = {"action": "update_list", "list_id": global_counter_list[shopping_list["id"]].to_dict()["id"], "list": global_counter_list[shopping_list["id"]].to_dict()["list"], "crdt_states": global_counter_list[shopping_list["id"]].to_dict()["crdt_states"]}
+    print(f"Sending updated list to the load balancer {global_counter_list[shopping_list['id']].to_dict()}")
+    request = {"action": "update_list", "list_id": global_counter_list[shopping_list['id']].to_dict()['id'], "list": global_counter_list[shopping_list["id"]].to_dict()["list"], "crdt_states": global_counter_list[shopping_list["id"]].to_dict()["crdt_states"]}
 
     # Ask the user if he wants to send the updated list to the load balancer 
     send_list = input("Do you want to send the updated list to the load balancer? (y/n): ")
@@ -147,7 +147,7 @@ def client_update_list(ident):
         print(f"Client-{ident} received response from load balancer of crdt_states: {crdt_states_server} and list: {list_server}")
         # Merge the existing list with the received list from the server
         global_counter_list[shopping_list["id"]].list, global_counter_list[shopping_list["id"]].crdt_states = global_counter_list[shopping_list["id"]].merge_version(list_server, crdt_states_server)
-        print(f"Client-{ident} updated shopping list: {global_counter_list[shopping_list["id"]].list} with crdt_states {global_counter_list[shopping_list["id"]].crdt_states}")
+        print(f"Client-{ident} updated shopping list: {global_counter_list[shopping_list['id']].list} with crdt_states {global_counter_list[shopping_list['id']].crdt_states}")
 
     # Change the quantity of the item in the local list
     existing_data  = read_file(ident)

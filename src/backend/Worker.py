@@ -57,17 +57,17 @@ def worker_task(ident):
                 print(f"The vector clocks are {crdt_states}")
                 print(f"The list id is {list['id']}")   
                 print(f"the global counter list is 2 : {global_counter_list}")
-                print(f"The global counter list is {global_counter_list[list["id"]]}")
+                print(f"The global counter list is {global_counter_list[list['id']]}")
                 # Merge the existing list with the received list from the client (request)
                 global_counter_list[list["id"]].list, global_counter_list[list["id"]].crdt_states = global_counter_list[list["id"]].merge_version(list, crdt_states)
-                print(f"The new updated list is {global_counter_list[list["id"]].list}")
+                print(f"The new updated list is {global_counter_list[list['id']].list}")
                 for cart in lists: 
                     if int(cart["id"]) == int(list["id"]):
                         print(f"Found")
                         cart["items"] = global_counter_list[list["id"]].list["items"]
                         cart["crdt_states"] = global_counter_list[list["id"]].crdt_states
                         break
-                print(f"Updating list: {global_counter_list[list["id"]].list['items']}")
+                print(f"Updating list: {global_counter_list[list['id']].list['items']}")
                 # print(f"Updating list: {new_list['items']}")
                 with open("local_list.json", "w") as file:
                     json.dump(lists, file, indent=4)
