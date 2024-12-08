@@ -57,10 +57,12 @@ def main():
             print("Received request from client: ", request)
             request_data = json.loads(request.decode("utf-8"))
             list_id = request_data.get("list_id","default_key")
-            assigned_worker = ring.get_node(str(list_id)) 
-            print(f"ASsigned worker: {assigned_worker} for list ID: {list_id}")
+            assigned_workers = ring.get_preference_list(str(list_id))
 
-            backend.send_multipart([assigned_worker.encode("utf-8"), b"", client, b"", request])
+            for assigned_worker in assigned_workers: 
+                print(f"Assigned worker: {assigned_worker} for list ID: {list_id}")
+                backend.send_multipart([assigned_worker.encode("utf-8"), b"", client, b"", request])
+            
             if not workers:
                 poller.unregister(frontend)
                 backend_ready = False
