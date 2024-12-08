@@ -39,78 +39,50 @@ class HashRing:
             idx = 0
         return self.ring[self.sorted_keys[idx]]
     
+    def get_preference_list(self, key, num_replicas = 3):
+        if not self.ring:
+            return None
+        
+        hashed_key = self._hash(key)
+        idx = bisect.bisect(self.sorted_keys, hashed_key)
+
+        p_list = []
+        visited_nodes = set()
+
+        while len(p_list) < num_replicas and len(visited_nodes) < len(self.sorted_keys):
+            if idx == len(self.sorted_keys):
+                idx = 0
+
+            node = self.ring[self.sorted_keys[idx]]
+            
+            if (node not in visited_nodes):
+                p_list.append(node)
+                visited_nodes.add(node)
+
+            idx += 1
+
+        return p_list
+
+
     def get_nodes(self):
         return list(set(self.ring.values()))
 
-
-""" 
-test test 
+"""
 def main():
-    list_key1 = "abc"
-    list_key2 = "def"
-    list_key3 = "ghi"
-    list_key4 = "jkl"
-    list_key5 = "mno"
-    list_key6 = "pqr"
-    list_key7 = "stu"
+    nodes = ["Node1", "Node2", "Node3", "Node4", "Node5"]
+    hash_ring = HashRing(nodes)
 
-    nodes = ["node1", "node2", "node3"]
+    key = "my_datakey"
+    preference_list = hash_ring.get_preference_list(key, num_replicas=3)
+    node = hash_ring.get_node(key)
+    print(f"Preference list for key '{key}': {preference_list}")
 
-    ring = HashRing(nodes)
-
-    print("normal")
-
-    print(ring.get_node(list_key1))
-    print(ring.get_node(list_key2))
-    print(ring.get_node(list_key3))
-    print(ring.get_node(list_key4))
-    print(ring.get_node(list_key5))
-    print(ring.get_node(list_key6))
-    print(ring.get_node(list_key7))
-
-    ring.remove_node("node2")
-
-    print("reomved 2")
-
-
-    print(ring.get_node(list_key1))
-    print(ring.get_node(list_key2))
-    print(ring.get_node(list_key3))
-    print(ring.get_node(list_key4))
-    print(ring.get_node(list_key5))
-    print(ring.get_node(list_key6))
-    print(ring.get_node(list_key7))
-
-    print("added node 4")
-
-
-    ring.add_node("node4")
-    print(ring.get_node(list_key1))
-    print(ring.get_node(list_key2))
-    print(ring.get_node(list_key3))
-    print(ring.get_node(list_key4))
-    print(ring.get_node(list_key5))
-    print(ring.get_node(list_key6))
-    print(ring.get_node(list_key7))
-
-    print("removed node 1 and 3")
-
-    ring.remove_node("node1")
-    ring.remove_node("node3")
-
-    print(ring.get_node(list_key1))
-    print(ring.get_node(list_key2))
-    print(ring.get_node(list_key3))
-    print(ring.get_node(list_key4))
-    print(ring.get_node(list_key5))
-    print(ring.get_node(list_key6))
-    print(ring.get_node(list_key7))
 
 
 if __name__ == "__main__":
     main()
 
 
+"""
 
-
- """
+ 

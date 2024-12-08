@@ -7,19 +7,19 @@ from GlobalCounter import GlobalCounter
 global_counter_list = {}
 
 def check_lists_in_global_counter(ident):
-    with open("local_list.json",'r') as file:
+    with open(f"server/server_list_{ident}.json",'r') as file:
         shopping_lists = json.load(file)
 
     for shopping_list in shopping_lists: 
         if shopping_list["id"] not in global_counter_list: 
             global_counter_list[shopping_list["id"]] = GlobalCounter(shopping_list["id"], shopping_list)
-            existing_data = read_list(shopping_list["id"])
+            existing_data = read_list(shopping_list["id"], ident)
             global_counter_list[shopping_list["id"]].list["items"] = existing_data["items"]
             global_counter_list[shopping_list["id"]].crdt_states = existing_data["crdt_states"]
 
 
-def read_list(id):
-    json_file = 'local_list.json' 
+def read_list(id, ident):
+    json_file = f"server/server_list_{ident}.json"
     with open(json_file, 'r') as file:
         shopping_lists = json.load(file)
     
@@ -54,7 +54,7 @@ def worker_task(ident):
 
             if action == "get_list":
                 # Load the list from the json file
-                with open("local_list.json", "r") as file:
+                with open(f"server/server_list_{ident}.json", "r") as file:
                     lists = json.load(file)
                 for list_aux in lists:
                     if int(list_aux["id"]) == int(request_data.get("list_id")):
@@ -62,41 +62,41 @@ def worker_task(ident):
                         break
                 response = {"status": "success", "list": list}
             elif action == "update_list":
-                with open("local_list.json", "r") as file: 
+                with open(f"server/server_list_{ident}.json", "r") as file: 
                     lists = json.load(file)
 
                 check_lists_in_global_counter(ident)
                 # Merge the existing list with the received list from the client (request)
                 global_counter_list[list["id"]].list, global_counter_list[list["id"]].crdt_states = global_counter_list[list["id"]].merge_version(list, crdt_states)
-                print(f"The new updated list is {global_counter_list[list["id"]].list}")
+                print(f"The new updated list is {global_counter_list[list['id']].list}")
                 for cart in lists: 
                     if int(cart["id"]) == int(list["id"]):
                         print(f"Found")
                         cart["items"] = global_counter_list[list["id"]].list["items"]
                         cart["crdt_states"] = global_counter_list[list["id"]].crdt_states
                         break
-                print(f"Updating list: {global_counter_list[list["id"]].list['items']}")
+                print(f"Updating list: {global_counter_list[list['id']].list['items']}")
                 # print(f"Updating list: {new_list['items']}")
-                with open("local_list.json", "w") as file:
+                with open(f"server/server_list_{ident}.json", "w") as file:
                     json.dump(lists, file, indent=4)
                 
                 global_counter_dict = global_counter_list[list["id"]].to_dict()
                 response = {"status": "success", "list": global_counter_dict["list"], "crdt_states": global_counter_dict["crdt_states"]}
             elif action == "create_list": 
-                with open("local_list.json", "r") as file:
+                with open(f"server/server_list_{ident}.json", "r") as file:
                     existing_lists = json.load(file)
                 
                 if isinstance(existing_lists, dict): 
                     existing_lists  =json.load(file)
                 
                 existing_lists.append(list)
-                with open("local_list.json", "w") as file:
+                with open(f"server/server_list_{ident}.json", "w") as file:
                     json.dump(existing_lists, file, indent=4)
 
                 response = {"status" :"success", "message": f"List created: {list['items']}"}   
             
             elif action =="delete_list": 
-                with open("local_list.json", "r") as file: 
+                with open(f"server/server_list_{ident}.json", "r") as file: 
                     existing_lists = json.load(file)
                 
                 for list_aux in existing_lists: 
@@ -105,7 +105,7 @@ def worker_task(ident):
                         existing_lists.remove(list_aux)
                         break
             
-                with open("local_list.json", "w") as file:
+                with open(f"server/server_list_{ident}.json", "w") as file:
                     json.dump(existing_lists, file, indent=4)
 
                 response = {"status": "success", "message": f"List deleted: {list['id']}"}
