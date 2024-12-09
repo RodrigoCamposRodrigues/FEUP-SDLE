@@ -8,11 +8,11 @@ from HashRing import HashRing
 
 clients_lists = {}
 
-
 def main():
     count = 2
     backend_ready = False
     workers = set()
+    previous_workers = set()  # Track the previous state of the worker list
     ring = HashRing()
     context = zmq.Context()
     frontend = context.socket(zmq.ROUTER) 
@@ -51,12 +51,21 @@ def main():
                 empty, reply = request[3:]
                 frontend.send_multipart([client, b"", reply])
 
+            # workers list updated
+            if workers != previous_workers:
+                print("Worker list updated. Sending updates...")
+                previous_workers = workers.copy()  
+                worker_list_message = json.dumps({"action": "update_workers", "workers": list(workers)})
+                for worker in workers:
+                    backend.send_multipart([worker.encode("utf-8"), b"", b"", b"", worker_list_message.encode("utf-8")])
+                    print(f"Sent worker list to worker: {worker}")
+
         # Handle client requests on the frontend
         if frontend in sockets:
-            client, empty,request = frontend.recv_multipart()
+            client, empty, request = frontend.recv_multipart()
             print("Received request from client: ", request)
             request_data = json.loads(request.decode("utf-8"))
-            list_id = request_data.get("list_id","default_key")
+            list_id = request_data.get("list_id", "default_key")
             assigned_workers = ring.get_preference_list(str(list_id))
 
             for assigned_worker in assigned_workers: 

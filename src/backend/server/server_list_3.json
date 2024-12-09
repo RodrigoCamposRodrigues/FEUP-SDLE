@@ -1,0 +1,26 @@
+[
+    {
+        "id": 87184592107225023994031495768746977192,
+        "name": "Burguer King",
+        "items": {
+            "carne": 0,
+            "alface": 0
+        },
+        "crdt_states": {
+            "carne": {
+
+            },
+            "alface": {
+            }
+        }
+    },
+    {
+        "id": 308403245402627707839803230870093707826,
+        "name": "McDonalds",
+        "items": {
+            "carne": 2,
+            "alface": 4
+        },
+        "crdt_states": {}
+    }
+]
