@@ -12,7 +12,7 @@ def replicate_to_workers(preference_list, global_counter_dict, context):
     for worker in preference_list:
         print(f"Replicating to worker {worker}")
         replicate_socket = context.socket(zmq.REQ)
-        replicate_socket.connect(f"ipc://{worker}.ipc")
+        replicate_socket.connect(f"ipc://{worker}.replicate.ipc")
         try:
             replicate_request = {
                 "action": "replicate_list",
@@ -21,6 +21,7 @@ def replicate_to_workers(preference_list, global_counter_dict, context):
             }
 
             replicate_socket.send_json(replicate_request)
+            print(f"Sent replicate_list to worker {worker}")
             replicate_socket.recv()  
             print(f"Replicated update to worker {worker}")
         except Exception as e:
@@ -48,8 +49,28 @@ def read_list(id, ident):
     for shopping_list in shopping_lists:
         if shopping_list['id'] == id:
             return shopping_list
+        
+def merge_and_update_list(ident, list, crdt_states):
+    with open(f"server/server_list_{ident}.json", "r") as file:
+        lists = json.load(file)
+
+    check_lists_in_global_counter(ident)
+    global_counter_list[list["id"]].list, global_counter_list[list["id"]].crdt_states = global_counter_list[list["id"]].merge_version(list, crdt_states)
+    print(f"The new updated list is {global_counter_list[list['id']].list}")
+    for cart in lists:
+        if int(cart["id"]) == int(list["id"]):
+            print(f"Found")
+            cart["items"] = global_counter_list[list["id"]].list["items"]
+            cart["crdt_states"] = global_counter_list[list["id"]].crdt_states
+            break
+    print(f"Updating list: {global_counter_list[list['id']].list['items']}")
+    with open(f"server/server_list_{ident}.json", "w") as file:
+        json.dump(lists, file, indent=4)
+
+    return global_counter_list[list["id"]].to_dict()
 
 def worker_task(ident):
+    print(f"Starting Worker-{ident}")
     context = zmq.Context()
 
     socket = context.socket(zmq.REQ)
@@ -59,20 +80,42 @@ def worker_task(ident):
     health_socket = context.socket(zmq.REP)
     health_socket.bind(f"ipc://Worker-{ident}.ipc")
 
+    replicate_socket = context.socket(zmq.REP)
+    replicate_socket.bind(f"ipc://Worker-{ident}.replicate.ipc")
+
     socket.send(b"READY")
 
     print(f"Worker-{ident} started and connected to backend.")
 
     while True:
+        print(f"Worker-{ident} polling for events...")
         poller = zmq.Poller()
         poller.register(socket, zmq.POLLIN)
         poller.register(health_socket, zmq.POLLIN)
+        poller.register(replicate_socket, zmq.POLLIN)
 
         events = dict(poller.poll())
+
+        print(f"Worker-{ident} events: {events}")
+
+        if replicate_socket in events:
+            message = replicate_socket.recv_json()
+            print(f"Worker-{ident} received replication message: {message}")
+
+            action = message.get("action")
+            if action == "replicate_list":
+                list = message.get("list")
+                crdt_states = message.get("crdt_states")
+                global_counter_dict = merge_and_update_list(ident, list, crdt_states)
+                response = {"status": "success", "list": global_counter_dict["list"], "crdt_states": global_counter_dict["crdt_states"]}
+                replicate_socket.send_json(response)
+            continue
+            
 
         # Handle health-check requests
         if health_socket in events:
             message = health_socket.recv()
+            print(f"Worker-{ident} received health-check message: {message}")
             if message == b"PING":
                 health_socket.send(b"PONG")
             continue
@@ -80,6 +123,7 @@ def worker_task(ident):
         # Handle client backend requests
         if socket in events:
             message = socket.recv_multipart()
+            print(f"Worker-{ident} received message: {message}")
 
             if len(message) < 3:
                 print(f"Worker-{ident} received an unexpected message format: {message}")
@@ -102,35 +146,18 @@ def worker_task(ident):
                             list = list_aux
                             break
                     response = {"status": "success", "list": list}
-                elif action in ["update_list", "replicate_list"]:
+                elif action == "update_list":
                     preference_list = request_data.get("preference_list", [])
                     # Update the list on the current worker
-                    with open(f"server/server_list_{ident}.json", "r") as file:
-                        lists = json.load(file)
-
-                    check_lists_in_global_counter(ident)
-                    global_counter_list[list["id"]].list, global_counter_list[list["id"]].crdt_states = global_counter_list[list["id"]].merge_version(list, crdt_states)
-                    print(f"The new updated list is {global_counter_list[list['id']].list}")
-                    for cart in lists:
-                        if int(cart["id"]) == int(list["id"]):
-                            print(f"Found")
-                            cart["items"] = global_counter_list[list["id"]].list["items"]
-                            cart["crdt_states"] = global_counter_list[list["id"]].crdt_states
-                            break
-                    print(f"Updating list: {global_counter_list[list['id']].list['items']}")
-                    with open(f"server/server_list_{ident}.json", "w") as file:
-                        json.dump(lists, file, indent=4)
-
-                    global_counter_dict = global_counter_list[list["id"]].to_dict()
+                    global_counter_dict = merge_and_update_list(ident, list, crdt_states)
                     response = {"status": "success", "list": global_counter_dict["list"], "crdt_states": global_counter_dict["crdt_states"]}
 
-                    if(action == "update_list"):
-                        replication_thread = threading.Thread(
-                            target=replicate_to_workers,
-                            args=(preference_list, global_counter_dict, context),
-                            daemon=True
-                        )
-                        replication_thread.start()
+                    replication_thread = threading.Thread(
+                        target=replicate_to_workers,
+                        args=(preference_list, global_counter_dict, context),
+                        daemon=True
+                    )
+                    replication_thread.start()
                     
                 elif action == "create_list":
                     with open(f"server/server_list_{ident}.json", "r") as file:
