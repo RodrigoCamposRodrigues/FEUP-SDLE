@@ -27,6 +27,7 @@ def check_worker_health(context, workers, removed_workers):
                 print(f"Worker {worker} is down: {e}")
                 workers.remove(worker)  
                 removed_workers.add(worker) 
+                print("Workers: ", workers)
 
 
             finally:
@@ -66,8 +67,6 @@ def main():
             print("No activity detected.")
             continue
 
-        print("Polling...")
-
         # Handle worker responses on the backend
         if backend in sockets:
             request = backend.recv_multipart()
@@ -84,27 +83,22 @@ def main():
             if client != b"READY" and len(request) > 3:
                 empty, reply = request[3:]
                 frontend.send_multipart([client, b"", reply])
-
-            # Workers list updated
-            if workers != previous_workers:
-                print("Worker list updated. Sending updates...")
-                previous_workers = workers.copy()
-                worker_list_message = json.dumps({"action": "update_workers", "workers": list(workers)})
-                for worker in workers:
-                    backend.send_multipart([worker.encode("utf-8"), b"", b"", b"", worker_list_message.encode("utf-8")])
-                    print(f"Sent worker list to worker: {worker}")
-
+       
         # Handle client requests on the frontend
         if frontend in sockets:
             client, empty, request = frontend.recv_multipart()
             print("Received request from client: ", request)
             request_data = json.loads(request.decode("utf-8"))
             list_id = request_data.get("list_id", "default_key")
-            assigned_workers = ring.get_preference_list(str(list_id))
+            preference_list = ring.get_preference_list(str(list_id))
+            coordinator_node = ring.get_node(str(list_id))
 
-            for assigned_worker in assigned_workers:
-                print(f"Assigned worker: {assigned_worker} for list ID: {list_id}")
-                backend.send_multipart([assigned_worker.encode("utf-8"), b"", client, b"", request])
+            preference_list.remove(coordinator_node)
+
+            request_data["preference_list"] = preference_list
+            
+            # send client request data and 2 neighbor nodes to replicate the data
+            backend.send_multipart([coordinator_node.encode("utf-8"), b"", client, b"", json.dumps(request_data).encode("utf-8")])
 
             if not workers:
                 poller.unregister(frontend)

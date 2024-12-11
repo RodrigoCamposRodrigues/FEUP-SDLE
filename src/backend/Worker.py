@@ -2,10 +2,32 @@ from __future__ import print_function
 import zmq
 import json
 import sys
+import threading
 from GlobalCounter import GlobalCounter
 
 global_counter_list = {}
-known_workers = set()
+
+def replicate_to_workers(preference_list, global_counter_dict, context):
+    print("preference list is ", preference_list)
+    for worker in preference_list:
+        print(f"Replicating to worker {worker}")
+        replicate_socket = context.socket(zmq.REQ)
+        replicate_socket.connect(f"ipc://{worker}.ipc")
+        try:
+            replicate_request = {
+                "action": "replicate_list",
+                "list": global_counter_dict["list"],
+                "crdt_states": global_counter_dict["crdt_states"]
+            }
+
+            replicate_socket.send_json(replicate_request)
+            replicate_socket.recv()  
+            print(f"Replicated update to worker {worker}")
+        except Exception as e:
+            print(f"Failed to replicate to worker {worker}: {e}")
+        finally:
+            replicate_socket.close()
+
 
 def check_lists_in_global_counter(ident):
     with open(f"server/server_list_{ident}.json", 'r') as file:
@@ -37,7 +59,6 @@ def worker_task(ident):
     health_socket = context.socket(zmq.REP)
     health_socket.bind(f"ipc://Worker-{ident}.ipc")
 
-    known_workers = set()
     socket.send(b"READY")
 
     print(f"Worker-{ident} started and connected to backend.")
@@ -56,7 +77,7 @@ def worker_task(ident):
                 health_socket.send(b"PONG")
             continue
 
-        # Handle normal backend requests
+        # Handle client backend requests
         if socket in events:
             message = socket.recv_multipart()
 
@@ -67,21 +88,13 @@ def worker_task(ident):
             address, empty, request = message
             print(f"Worker-{ident} received request: {request.decode()}")
 
-            # Process the request
             try:
                 request_data = json.loads(request.decode("utf-8"))
                 action = request_data.get("action")
                 list = request_data.get("list")
                 crdt_states = request_data.get("crdt_states")
 
-                if action == "update_workers":
-                    new_workers = set(request_data.get("workers", []))
-                    if new_workers != known_workers:
-                        known_workers = new_workers
-                        print(f"Worker-{ident} knows the workers: {known_workers}")
-                    response = {"status": "success"}
-
-                elif action == "get_list":
+                if action == "get_list":
                     with open(f"server/server_list_{ident}.json", "r") as file:
                         lists = json.load(file)
                     for list_aux in lists:
@@ -89,7 +102,9 @@ def worker_task(ident):
                             list = list_aux
                             break
                     response = {"status": "success", "list": list}
-                elif action == "update_list":
+                elif action in ["update_list", "replicate_list"]:
+                    preference_list = request_data.get("preference_list", [])
+                    # Update the list on the current worker
                     with open(f"server/server_list_{ident}.json", "r") as file:
                         lists = json.load(file)
 
@@ -108,6 +123,15 @@ def worker_task(ident):
 
                     global_counter_dict = global_counter_list[list["id"]].to_dict()
                     response = {"status": "success", "list": global_counter_dict["list"], "crdt_states": global_counter_dict["crdt_states"]}
+
+                    if(action == "update_list"):
+                        replication_thread = threading.Thread(
+                            target=replicate_to_workers,
+                            args=(preference_list, global_counter_dict, context),
+                            daemon=True
+                        )
+                        replication_thread.start()
+                    
                 elif action == "create_list":
                     with open(f"server/server_list_{ident}.json", "r") as file:
                         existing_lists = json.load(file)
