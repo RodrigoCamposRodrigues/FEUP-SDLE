@@ -56,9 +56,11 @@ def main():
             client, empty,request = frontend.recv_multipart()
             print("Received request from client: ", request)
             request_data = json.loads(request.decode("utf-8"))
+            print(f"Request data: {request_data}")
             list_id = request_data.get("list_id","default_key")
+            print(f"List ID: {list_id}")
             assigned_workers = ring.get_preference_list(str(list_id))
-
+            print(f"Assigned workers: {assigned_workers}")
             for assigned_worker in assigned_workers: 
                 print(f"Assigned worker: {assigned_worker} for list ID: {list_id}")
                 backend.send_multipart([assigned_worker.encode("utf-8"), b"", client, b"", request])

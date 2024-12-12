@@ -3,7 +3,9 @@ import zmq
 import json
 import sys
 from GlobalCounter import GlobalCounter
+from backend.ORMap import ORMap, DotContext
 
+orMaps = {}
 global_counter_list = {}
 
 def check_lists_in_global_counter(ident):
@@ -15,7 +17,7 @@ def check_lists_in_global_counter(ident):
             global_counter_list[shopping_list["id"]] = GlobalCounter(shopping_list["id"], shopping_list)
             existing_data = read_list(shopping_list["id"], ident)
             global_counter_list[shopping_list["id"]].list["items"] = existing_data["items"]
-            global_counter_list[shopping_list["id"]].crdt_states = existing_data["crdt_states"]
+            global_counter_list[shopping_list["id"]].list["crdt_states"] = existing_data["crdt_states"]
 
 
 def read_list(id, ident):
@@ -27,6 +29,18 @@ def read_list(id, ident):
     for shopping_list in shopping_lists:
         if shopping_list['id'] == id: 
             return shopping_list
+        
+
+
+def orMapToJson(orMaps, shopping_list): 
+    temp = {}
+    print(1)
+    print(f"The orMaps are {orMaps}")
+    print(f"The list is {shopping_list["id"]}")
+    print(f"The ormaps in the function are {orMaps[shopping_list["id"]]}")
+    temp = orMaps[shopping_list["id"]]
+    print(2)
+    return temp
 
 
 def worker_task(ident):
@@ -49,15 +63,24 @@ def worker_task(ident):
         try:
             request_data = json.loads(request.decode("utf-8"))
             action = request_data.get("action")
-            list = request_data.get("list")
-            crdt_states = request_data.get("crdt_states")
+            list = request_data.get("list", {})
+            #crdt_states = request_data.get("crdt_states", list.get("crdt_states", {}))
+            crdt_states = list.get("crdt_states", {})
+            pn_counter_states = crdt_states.get("PNCounter", {})
+            orMapsOther = ORMap.from_dict(crdt_states.get("ORMap", {}))
+
 
             if action == "get_list":
                 # Load the list from the json file
+                print(1)
                 with open(f"server/server_list_{ident}.json", "r") as file:
+                    print(2)
                     lists = json.load(file)
+                print(3)
                 for list_aux in lists:
+                    print(4)
                     if int(list_aux["id"]) == int(request_data.get("list_id")):
+                        print(5)
                         list = list_aux
                         break
                 response = {"status": "success", "list": list}
@@ -67,21 +90,45 @@ def worker_task(ident):
 
                 check_lists_in_global_counter(ident)
                 # Merge the existing list with the received list from the client (request)
-                global_counter_list[list["id"]].list, global_counter_list[list["id"]].crdt_states = global_counter_list[list["id"]].merge_version(list, crdt_states)
+                print(f"The action inside is {action}")
+                print(f"The list inside is {list}")
+                print(f"The crdt_states inside are {crdt_states}")
+                print(f"The orMapsOther inside are {orMapsOther}")
+                global_counter_list[list["id"]].list = global_counter_list[list["id"]].merge_version(list, crdt_states, orMapsOther)
                 print(f"The new updated list is {global_counter_list[list['id']].list}")
                 for cart in lists: 
                     if int(cart["id"]) == int(list["id"]):
                         print(f"Found")
                         cart["items"] = global_counter_list[list["id"]].list["items"]
-                        cart["crdt_states"] = global_counter_list[list["id"]].crdt_states
+                        if type(global_counter_list[list["id"]].list["crdt_states"]["ORMap"]) == ORMap:
+                            aux = ORMap.to_dict(global_counter_list[list["id"]].list["crdt_states"]["ORMap"])
+                            print(f"The value of the aux is {aux} and its type is {type(aux)}")
+                            cart["crdt_states"]["PNCounter"] = global_counter_list[list["id"]].to_dict()["list"]["crdt_states"]["PNCounter"]
+                            cart["crdt_states"]["ORMap"] = aux
+                        else: 
+                            cart["crdt_states"] = global_counter_list[list["id"]].to_dict()["list"]["crdt_states"]
                         break
                 print(f"Updating list: {global_counter_list[list['id']].list['items']}")
                 # print(f"Updating list: {new_list['items']}")
                 with open(f"server/server_list_{ident}.json", "w") as file:
-                    json.dump(lists, file, indent=4)
+                     json.dump(lists, file, indent=4)
                 
-                global_counter_dict = global_counter_list[list["id"]].to_dict()
-                response = {"status": "success", "list": global_counter_dict["list"], "crdt_states": global_counter_dict["crdt_states"]}
+                print(f"Before sending response of the list {type(global_counter_list[list["id"]].list["crdt_states"]["ORMap"])}")
+                if (type(global_counter_list[list["id"]].list["crdt_states"]["ORMap"]) == ORMap):
+                    print(1)
+                    global_aux = global_counter_list[list["id"]]
+                    aux = ORMap.to_dict(global_counter_list[list["id"]].list["crdt_states"]["ORMap"])
+                    global_aux.list["crdt_states"]["PNCounter"] = global_counter_list[list["id"]].to_dict()["list"]["crdt_states"]["PNCounter"]
+                    global_aux.list["crdt_states"]["ORMap"] = aux
+                    response = {"status": "success", "list": global_aux.list}
+                else: 
+                    print(2)
+                    global_aux = global_counter_list[list["id"]].to_dict()["list"]
+                    print(global_aux)
+                    response = {"status": "success", "list": global_aux}
+                #temp = orMapToJson(orMaps, list)
+
+                #print(f"Sending temp to the client: {temp}")
             elif action == "create_list": 
                 with open(f"server/server_list_{ident}.json", "r") as file:
                     existing_lists = json.load(file)

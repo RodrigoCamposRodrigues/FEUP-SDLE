@@ -1,37 +1,327 @@
 [
     {
-        "id": 87184592107225023994031495768746977192,
-        "name": "Burguer King",
+        "id": 255590933761892151511265427274997687790,
+        "name": "mc",
         "items": {
-            "carne": 3,
-            "alface": 13
+            "carne": 0,
+            "fogo": 0,
+            "apple": 0
         },
         "crdt_states": {
-            "carne": {
-                "0": {
-                    "inc": 16,
-                    "dec": 1
+            "PNCounter": {
+                "carne": {},
+                "fogo": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 10
+                    },
+                    "1": {
+                        "inc": 10,
+                        "dec": 0
+                    }
                 },
-                "1": {
-                    "inc": 3,
-                    "dec": 15
-                }
+                "apple": {}
             },
-            "alface": {
-                "1": {
-                    "inc": 14,
-                    "dec": 1
-                }
+            "ORMap": {
+                "items": {
+                    "carne": [
+                        "0:1"
+                    ],
+                    "apple": [
+                        "1:2"
+                    ]
+                },
+                "tombstones": {
+                    "fogo": [
+                        "0:2",
+                        "1:1"
+                    ]
+                },
+                "context": {
+                    "0": [
+                        "0:1",
+                        "0:2"
+                    ],
+                    "1": [
+                        "1:1",
+                        "1:2"
+                    ]
+                },
+                "actor_id": 0
             }
         }
     },
     {
-        "id": 308403245402627707839803230870093707826,
-        "name": "McDonalds",
+        "id": 237174181594363105903839090316200866611,
+        "name": "mc",
         "items": {
-            "carne": 2,
-            "alface": 4
+            "carne": 0,
+            "alface": 0,
+            "alho": 0
         },
-        "crdt_states": {}
+        "crdt_states": {
+            "PNCounter": {
+                "carne": {},
+                "alface": {},
+                "alho": {}
+            },
+            "ORMap": {
+                "items": {
+                    "carne": [
+                        "0:1"
+                    ],
+                    "alho": [
+                        "0:2"
+                    ]
+                },
+                "tombstones": {
+                    "alface": [
+                        "1:1"
+                    ]
+                },
+                "context": {
+                    "0": [
+                        "0:1",
+                        "0:2"
+                    ],
+                    "1": [
+                        "1:1"
+                    ]
+                },
+                "actor_id": 0
+            }
+        }
+    },
+    {
+        "id": 224540080719823991710458067353728933785,
+        "name": "mc",
+        "items": {
+            "carne": 0,
+            "fogo": 0,
+            "agua": 0
+        },
+        "crdt_states": {
+            "PNCounter": {
+                "carne": {},
+                "fogo": {},
+                "agua": {}
+            },
+            "ORMap": {
+                "items": {
+                    "carne": [
+                        "0:1"
+                    ],
+                    "agua": [
+                        "0:2"
+                    ]
+                },
+                "tombstones": {
+                    "fogo": [
+                        "1:1"
+                    ]
+                },
+                "context": {
+                    "0": [
+                        "0:2",
+                        "0:1"
+                    ],
+                    "1": [
+                        "1:1"
+                    ]
+                },
+                "actor_id": 0
+            }
+        }
+    },
+    {
+        "id": 318541741455874330159169729994971378228,
+        "name": "loja",
+        "items": {
+            "carro": 0
+        },
+        "crdt_states": {
+            "PNCounter": {
+                "carro": {}
+            },
+            "ORMap": {
+                "items": {
+                    "carro": [
+                        "0:1"
+                    ]
+                },
+                "tombstones": {},
+                "context": {
+                    "0": [
+                        "0:1"
+                    ]
+                },
+                "actor_id": "0"
+            }
+        }
+    },
+    {
+        "id": 895864233797878235831430187539375048,
+        "name": "porto",
+        "items": {
+            "fogo": 0,
+            "roda": 0,
+            "jante": 0
+        },
+        "crdt_states": {
+            "PNCounter": {
+                "fogo": {},
+                "roda": {},
+                "jante": {}
+            },
+            "ORMap": {
+                "items": {
+                    "fogo": [
+                        "0:1"
+                    ],
+                    "roda": [
+                        "1:1"
+                    ],
+                    "jante": [
+                        "0:2"
+                    ]
+                },
+                "tombstones": {},
+                "context": {
+                    "0": [
+                        "0:2",
+                        "0:1"
+                    ],
+                    "1": [
+                        "1:1"
+                    ]
+                },
+                "actor_id": 0
+            }
+        }
+    },
+    {
+        "id": 244481755395107237080895125633903092658,
+        "name": "porto",
+        "items": {
+            "falcao": 0
+        },
+        "crdt_states": {
+            "PNCounter": {
+                "falcao": {}
+            },
+            "ORMap": {
+                "items": {
+                    "falcao": [
+                        "0:1"
+                    ]
+                },
+                "tombstones": {},
+                "context": {
+                    "0": [
+                        "0:1"
+                    ]
+                },
+                "actor_id": "0"
+            }
+        }
+    },
+    {
+        "id": 330063315039228840593123173374186806182,
+        "name": "moda",
+        "items": {
+            "moda": 0,
+            "porto": 0,
+            "fogo": 0
+        },
+        "crdt_states": {
+            "PNCounter": {
+                "moda": {},
+                "porto": {},
+                "fogo": {}
+            },
+            "ORMap": {
+                "items": {
+                    "moda": [
+                        "0:1"
+                    ],
+                    "porto": [
+                        "0:2"
+                    ]
+                },
+                "tombstones": {
+                    "fogo": [
+                        "1:1"
+                    ]
+                },
+                "context": {
+                    "0": [
+                        "0:2",
+                        "0:1"
+                    ],
+                    "1": [
+                        "1:1"
+                    ]
+                },
+                "actor_id": 0
+            }
+        }
+    },
+    {
+        "id": 46739522390144026856614556915552450956,
+        "name": "porto",
+        "items": {
+            "falcao": 0,
+            "hulk": 0
+        },
+        "crdt_states": {
+            "PNCounter": {
+                "hulk": {},
+                "falcao": {}
+            },
+            "ORMap": {
+                "items": {
+                    "falcao": [
+                        "0:1"
+                    ],
+                    "hulk": [
+                        "0:2"
+                    ]
+                },
+                "tombstones": {},
+                "context": {
+                    "0": [
+                        "0:2",
+                        "0:1"
+                    ]
+                },
+                "actor_id": 0
+            }
+        }
+    },
+    {
+        "id": 173533711220574842976444042292360313830,
+        "name": "arma",
+        "items": {
+            "cano": 0
+        },
+        "crdt_states": {
+            "PNCounter": {
+                "cano": {}
+            },
+            "ORMap": {
+                "items": {
+                    "cano": [
+                        "0:1"
+                    ]
+                },
+                "tombstones": {},
+                "context": {
+                    "0": [
+                        "0:1"
+                    ]
+                },
+                "actor_id": 0
+            }
+        }
     }
 ]

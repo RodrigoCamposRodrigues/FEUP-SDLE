@@ -40,6 +40,7 @@ class HashRing:
         return self.ring[self.sorted_keys[idx]]
     
     def get_preference_list(self, key, num_replicas = 3):
+        print(f"Ring: {self.ring}")
         if not self.ring:
             return None
         
