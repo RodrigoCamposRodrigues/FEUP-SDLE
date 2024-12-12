@@ -3,17 +3,26 @@
         "id": 87184592107225023994031495768746977192,
         "name": "Burguer King",
         "items": {
-            "carne": 15,
-            "alface": 0
+            "carne": 0,
+            "alface": 13
         },
         "crdt_states": {
             "carne": {
                 "0": {
-                    "inc": 16,
-                    "dec": 1
+                    "inc": 37,
+                    "dec": 25
+                },
+                "1": {
+                    "inc": 3,
+                    "dec": 15
                 }
             },
-            "alface": {}
+            "alface": {
+                "1": {
+                    "inc": 14,
+                    "dec": 1
+                }
+            }
         }
     }
 ]
