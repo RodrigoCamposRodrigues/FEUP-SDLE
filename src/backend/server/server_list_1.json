@@ -1,274 +1,387 @@
 [
     {
-        "id": 237174181594363105903839090316200866611,
+        "id": 30955084526635704674066645087379932118,
         "name": "mc",
         "items": {
-            "carne": 0,
-            "alface": 0,
-            "alho": 0
+            "carne": 0
         },
         "crdt_states": {
-            "PNCounter": {
-                "carne": {},
-                "alface": {},
-                "alho": {}
-            },
             "ORMap": {
                 "items": {
                     "carne": [
                         "0:1"
-                    ],
-                    "alho": [
-                        "0:2"
                     ]
                 },
-                "tombstones": {
-                    "alface": [
-                        "1:1"
-                    ]
-                },
+                "tombstones": {},
                 "context": {
                     "0": [
-                        "0:2",
                         "0:1"
-                    ],
-                    "1": [
-                        "1:1"
                     ]
                 },
-                "actor_id": 0
-            }
-        }
-    },
-    {
-        "id": 224540080719823991710458067353728933785,
-        "name": "mc",
-        "items": {
-            "carne": 0,
-            "fogo": 0,
-            "agua": 0
-        },
-        "crdt_states": {
-            "PNCounter": {
-                "carne": {},
-                "fogo": {},
-                "agua": {}
+                "actor_id": "0"
             },
-            "ORMap": {
-                "items": {
-                    "carne": [
-                        "0:1"
-                    ],
-                    "agua": [
-                        "0:2"
-                    ]
-                },
-                "tombstones": {
-                    "fogo": [
-                        "1:1"
-                    ]
-                },
-                "context": {
-                    "0": [
-                        "0:1",
-                        "0:2"
-                    ],
-                    "1": [
-                        "1:1"
-                    ]
-                },
-                "actor_id": 0
+            "PNCounter": {
+                "carne": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 0
+                    }
+                }
             }
         }
     },
     {
-        "id": 318541741455874330159169729994971378228,
+        "id": 137650403935214322703935764046440289653,
         "name": "loja",
         "items": {
-            "carro": 0
+            "roupa": 0,
+            "moda": 0
         },
         "crdt_states": {
-            "PNCounter": {
-                "carro": {}
-            },
             "ORMap": {
                 "items": {
-                    "carro": [
-                        "0:1"
-                    ]
-                },
-                "tombstones": {},
-                "context": {
-                    "0": [
-                        "0:1"
-                    ]
-                },
-                "actor_id": "0"
-            }
-        }
-    },
-    {
-        "id": 895864233797878235831430187539375048,
-        "name": "porto",
-        "items": {
-            "fogo": 0,
-            "roda": 0,
-            "jante": 0
-        },
-        "crdt_states": {
-            "PNCounter": {
-                "fogo": {},
-                "roda": {},
-                "jante": {}
-            },
-            "ORMap": {
-                "items": {
-                    "fogo": [
+                    "roupa": [
                         "0:1"
                     ],
-                    "roda": [
-                        "1:1"
-                    ],
-                    "jante": [
-                        "0:2"
-                    ]
-                },
-                "tombstones": {},
-                "context": {
-                    "0": [
-                        "0:2",
-                        "0:1"
-                    ],
-                    "1": [
-                        "1:1"
-                    ]
-                },
-                "actor_id": 0
-            }
-        }
-    },
-    {
-        "id": 244481755395107237080895125633903092658,
-        "name": "porto",
-        "items": {
-            "falcao": 0
-        },
-        "crdt_states": {
-            "PNCounter": {
-                "falcao": {}
-            },
-            "ORMap": {
-                "items": {
-                    "falcao": [
-                        "0:1"
-                    ]
-                },
-                "tombstones": {},
-                "context": {
-                    "0": [
-                        "0:1"
-                    ]
-                },
-                "actor_id": "0"
-            }
-        }
-    },
-    {
-        "id": 330063315039228840593123173374186806182,
-        "name": "moda",
-        "items": {
-            "moda": 0,
-            "porto": 0,
-            "fogo": 0
-        },
-        "crdt_states": {
-            "PNCounter": {
-                "moda": {},
-                "porto": {},
-                "fogo": {}
-            },
-            "ORMap": {
-                "items": {
                     "moda": [
-                        "0:1"
-                    ],
-                    "porto": [
                         "0:2"
                     ]
                 },
-                "tombstones": {
-                    "fogo": [
-                        "1:1"
-                    ]
-                },
+                "tombstones": {},
                 "context": {
                     "0": [
                         "0:1",
                         "0:2"
-                    ],
-                    "1": [
-                        "1:1"
                     ]
                 },
-                "actor_id": 0
-            }
-        }
-    },
-    {
-        "id": 46739522390144026856614556915552450956,
-        "name": "porto",
-        "items": {
-            "falcao": 0,
-            "hulk": 0
-        },
-        "crdt_states": {
-            "PNCounter": {
-                "hulk": {},
-                "falcao": {}
+                "actor_id": "0"
             },
-            "ORMap": {
-                "items": {
-                    "falcao": [
-                        "0:1"
-                    ],
-                    "hulk": [
-                        "0:2"
-                    ]
+            "PNCounter": {
+                "roupa": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 0
+                    }
                 },
-                "tombstones": {},
-                "context": {
-                    "0": [
-                        "0:2",
-                        "0:1"
-                    ]
-                },
-                "actor_id": 0
+                "moda": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 0
+                    }
+                }
             }
         }
     },
     {
-        "id": 173533711220574842976444042292360313830,
+        "id": 3128390097860761055465912258429047524,
         "name": "arma",
         "items": {
-            "cano": 0
+            "cano": 0,
+            "espi": 0
         },
         "crdt_states": {
-            "PNCounter": {
-                "cano": {}
-            },
             "ORMap": {
                 "items": {
                     "cano": [
                         "0:1"
+                    ],
+                    "espi": [
+                        "0:2"
                     ]
                 },
                 "tombstones": {},
                 "context": {
                     "0": [
+                        "0:1",
+                        "0:2"
+                    ]
+                },
+                "actor_id": "0"
+            },
+            "PNCounter": {
+                "cano": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 0
+                    }
+                },
+                "espi": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 0
+                    }
+                }
+            }
+        }
+    },
+    {
+        "id": 293221828356786332557901524109636290691,
+        "name": "porto",
+        "items": {
+            "hulk": 0,
+            "falcao": 0
+        },
+        "crdt_states": {
+            "ORMap": {
+                "items": {
+                    "hulk": [
+                        "0:1"
+                    ],
+                    "falcao": [
+                        "0:2"
+                    ]
+                },
+                "tombstones": {},
+                "context": {
+                    "0": [
+                        "0:2",
                         "0:1"
                     ]
                 },
-                "actor_id": 0
+                "actor_id": "0"
+            },
+            "PNCounter": {
+                "hulk": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 0
+                    }
+                },
+                "falcao": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 0
+                    }
+                }
+            }
+        }
+    },
+    {
+        "id": 189121177271676696884716692116532964032,
+        "name": "porto",
+        "items": {
+            "hulk": 0,
+            "falcao": 0
+        },
+        "crdt_states": {
+            "ORMap": {
+                "items": {
+                    "hulk": [
+                        "0:1"
+                    ],
+                    "falcao": [
+                        "0:2"
+                    ]
+                },
+                "tombstones": {},
+                "context": {
+                    "0": [
+                        "0:2",
+                        "0:1"
+                    ]
+                },
+                "actor_id": "0"
+            },
+            "PNCounter": {
+                "hulk": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 0
+                    }
+                },
+                "falcao": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 0
+                    }
+                }
+            }
+        }
+    },
+    {
+        "id": 23804570625820861762176434578738409874,
+        "name": "porto",
+        "items": {
+            "hulk": 0
+        },
+        "crdt_states": {
+            "ORMap": {
+                "items": {
+                    "hulk": [
+                        "0:1"
+                    ]
+                },
+                "tombstones": {
+                    "falcao": [
+                        "0:2"
+                    ]
+                },
+                "context": {
+                    "0": [
+                        "0:2",
+                        "0:1"
+                    ]
+                },
+                "actor_id": "0"
+            },
+            "PNCounter": {
+                "hulk": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 0
+                    }
+                },
+                "falcao": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 0
+                    }
+                }
+            }
+        }
+    },
+    {
+        "id": 37307261816456029732047218668429004716,
+        "name": "cm",
+        "items": {
+            "caca": 0
+        },
+        "crdt_states": {
+            "ORMap": {
+                "items": {
+                    "caca": [
+                        "0:1"
+                    ]
+                },
+                "tombstones": {
+                    "fogo": [
+                        "0:2"
+                    ]
+                },
+                "context": {
+                    "0": [
+                        "0:2",
+                        "0:1"
+                    ]
+                },
+                "actor_id": "0"
+            },
+            "PNCounter": {
+                "caca": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 0
+                    }
+                },
+                "fogo": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 0
+                    }
+                }
+            }
+        }
+    },
+    {
+        "id": 134638154574336970319598143824523195881,
+        "name": "loja",
+        "items": {
+            "moda": 10,
+            "roupa": 10
+        },
+        "crdt_states": {
+            "ORMap": {
+                "items": {
+                    "moda": [
+                        "0:2"
+                    ],
+                    "roupa": [
+                        "1:1"
+                    ]
+                },
+                "tombstones": {
+                    "roupa": [
+                        "0:1"
+                    ]
+                },
+                "context": {
+                    "0": [
+                        "0:2",
+                        "0:1"
+                    ],
+                    "1": [
+                        "1:1"
+                    ]
+                },
+                "actor_id": "0"
+            },
+            "PNCounter": {
+                "roupa": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 0
+                    },
+                    "1": {
+                        "inc": 10,
+                        "dec": 0
+                    }
+                },
+                "moda": {
+                    "0": {
+                        "inc": 10,
+                        "dec": 0
+                    }
+                }
+            }
+        }
+    },
+    {
+        "id": 49249745642742168357637313485322678815,
+        "name": "porto",
+        "items": {
+            "james": 20,
+            "falcao": 10
+        },
+        "crdt_states": {
+            "ORMap": {
+                "items": {
+                    "james": [
+                        "0:1"
+                    ],
+                    "falcao": [
+                        "0:2"
+                    ]
+                },
+                "tombstones": {},
+                "context": {
+                    "0": [
+                        "0:2",
+                        "0:1"
+                    ]
+                },
+                "actor_id": "0"
+            },
+            "PNCounter": {
+                "james": {
+                    "0": {
+                        "inc": 10,
+                        "dec": 0
+                    },
+                    "1": {
+                        "inc": 10,
+                        "dec": 0
+                    }
+                },
+                "falcao": {
+                    "0": {
+                        "inc": 0,
+                        "dec": 0
+                    },
+                    "1": {
+                        "inc": 10,
+                        "dec": 0
+                    }
+                }
             }
         }
     }

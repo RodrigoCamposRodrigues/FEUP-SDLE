@@ -3,7 +3,9 @@ import zmq
 import json
 import sys
 from GlobalCounter import GlobalCounter
-from backend.ORMap import ORMap, DotContext
+from PNCounter import PNCounter
+from ORMap import ORMap, DotContext
+import copy
 
 orMaps = {}
 global_counter_list = {}
@@ -62,17 +64,42 @@ def worker_task(ident):
         #request
         try:
             request_data = json.loads(request.decode("utf-8"))
+            clientId = address.decode("utf-8")
+            clientId = clientId.split("-")[1]
+            print(f"The client id is {clientId}")
+
             action = request_data.get("action")
-            list = request_data.get("list", {})
+            clientList = request_data.get("list", {})
             #crdt_states = request_data.get("crdt_states", list.get("crdt_states", {}))
-            crdt_states = list.get("crdt_states", {})
-            pn_counter_states = crdt_states.get("PNCounter", {})
-            orMapsOther = ORMap.from_dict(crdt_states.get("ORMap", {}))
-
-
+            print(f"The list is {clientList}")
+            clientCrdtStates = clientList.get("crdt_states", {})
+            pnCounterStates = clientCrdtStates.get("PNCounter", {})
+            print(f"The pnCounterStates are {pnCounterStates}")
+            orMapStates = clientCrdtStates.get("ORMap", {})
+            print(f"The ormapsStates are {orMapStates}")
+            if orMapStates != {}: 
+                orMapStates = ORMap.from_dict(orMapStates,clientId)
+                print(f"The ormapStates111 are {orMapStates}")
+            if pnCounterStates != {}:
+                pnCounterStates = PNCounter.from_dict(pnCounterStates)
+                print(f"The pncounterstates are {pnCounterStates}")
+            
+            if action != "get_list": 
+                current_list = read_list(clientList["id"],ident)
+                if current_list != None: 
+                    current_list["crdt_states"]["ORMap"] = ORMap.from_dict(current_list["crdt_states"]["ORMap"], clientId)
+                    current_list["crdt_states"]["PNCounter"] = PNCounter.from_dict(current_list["crdt_states"]["PNCounter"])
+                else : 
+                    current_list = copy.deepcopy(clientList)
+                    current_list["crdt_states"]["ORMap"] = orMapStates
+                    current_list["crdt_states"]["PNCounter"] = pnCounterStates
+            
+            
             if action == "get_list":
                 # Load the list from the json file
                 print(1)
+                current_listId = request_data.get("list_id")
+                print(f"The current list id is {current_listId}")
                 with open(f"server/server_list_{ident}.json", "r") as file:
                     print(2)
                     lists = json.load(file)
@@ -81,66 +108,61 @@ def worker_task(ident):
                     print(4)
                     if int(list_aux["id"]) == int(request_data.get("list_id")):
                         print(5)
-                        list = list_aux
+                        clientList = list_aux
                         break
-                response = {"status": "success", "list": list}
+                print(f"The final list to be sent is {clientList}")
+                response = {"status": "success", "list": clientList}
             elif action == "update_list":
+                
                 with open(f"server/server_list_{ident}.json", "r") as file: 
                     lists = json.load(file)
 
                 check_lists_in_global_counter(ident)
                 # Merge the existing list with the received list from the client (request)
                 print(f"The action inside is {action}")
-                print(f"The list inside is {list}")
-                print(f"The crdt_states inside are {crdt_states}")
-                print(f"The orMapsOther inside are {orMapsOther}")
-                global_counter_list[list["id"]].list = global_counter_list[list["id"]].merge_version(list, crdt_states, orMapsOther)
-                print(f"The new updated list is {global_counter_list[list['id']].list}")
+                print(f"The list inside is {clientList}")
+                current_list["crdt_states"]["PNCounter"], current_list["items"] = current_list["crdt_states"]["PNCounter"].merge_version(copy.deepcopy(current_list), pnCounterStates)
+                print(f"The new updated list PNCounter is {current_list["crdt_states"]["PNCounter"].obj} with items {current_list["items"]}")
+                current_list["crdt_states"]["ORMap"], current_list["items"] = current_list["crdt_states"]["ORMap"].join(copy.deepcopy(current_list), orMapStates)
+                print(f"The new updated list ORMap is {current_list["crdt_states"]["ORMap"].obj}")
+                print(f"The current list final ORMAPS is {current_list["crdt_states"]["ORMap"].obj}")
+                print(f"The current list final PNCOUNTER is {current_list["crdt_states"]["PNCounter"].obj}")
+                current_list["crdt_states"]["ORMap"] = current_list["crdt_states"]["ORMap"].to_dict()
+                current_list["crdt_states"]["PNCounter"] = current_list["crdt_states"]["PNCounter"].to_dict()
                 for cart in lists: 
-                    if int(cart["id"]) == int(list["id"]):
-                        print(f"Found")
-                        cart["items"] = global_counter_list[list["id"]].list["items"]
-                        if type(global_counter_list[list["id"]].list["crdt_states"]["ORMap"]) == ORMap:
-                            aux = ORMap.to_dict(global_counter_list[list["id"]].list["crdt_states"]["ORMap"])
-                            print(f"The value of the aux is {aux} and its type is {type(aux)}")
-                            cart["crdt_states"]["PNCounter"] = global_counter_list[list["id"]].to_dict()["list"]["crdt_states"]["PNCounter"]
-                            cart["crdt_states"]["ORMap"] = aux
-                        else: 
-                            cart["crdt_states"] = global_counter_list[list["id"]].to_dict()["list"]["crdt_states"]
-                        break
-                print(f"Updating list: {global_counter_list[list['id']].list['items']}")
+                    if cart["id"] == current_list["id"]:
+                        cart["items"] = current_list["items"]
+                        cart["crdt_states"]["ORMap"] = current_list["crdt_states"]["ORMap"]
+                        cart["crdt_states"]["PNCounter"] = current_list["crdt_states"]["PNCounter"]
+
                 # print(f"Updating list: {new_list['items']}")
                 with open(f"server/server_list_{ident}.json", "w") as file:
                      json.dump(lists, file, indent=4)
+
+                print(f"Sending response to the load balancer {current_list}")
                 
-                print(f"Before sending response of the list {type(global_counter_list[list["id"]].list["crdt_states"]["ORMap"])}")
-                if (type(global_counter_list[list["id"]].list["crdt_states"]["ORMap"]) == ORMap):
-                    print(1)
-                    global_aux = global_counter_list[list["id"]]
-                    aux = ORMap.to_dict(global_counter_list[list["id"]].list["crdt_states"]["ORMap"])
-                    global_aux.list["crdt_states"]["PNCounter"] = global_counter_list[list["id"]].to_dict()["list"]["crdt_states"]["PNCounter"]
-                    global_aux.list["crdt_states"]["ORMap"] = aux
-                    response = {"status": "success", "list": global_aux.list}
-                else: 
-                    print(2)
-                    global_aux = global_counter_list[list["id"]].to_dict()["list"]
-                    print(global_aux)
-                    response = {"status": "success", "list": global_aux}
+                response = {"status": "success", "list": current_list}
+
                 #temp = orMapToJson(orMaps, list)
 
                 #print(f"Sending temp to the client: {temp}")
             elif action == "create_list": 
+                print(f"Entering create_list")
                 with open(f"server/server_list_{ident}.json", "r") as file:
                     existing_lists = json.load(file)
                 
                 if isinstance(existing_lists, dict): 
                     existing_lists  =json.load(file)
+
+                print(f"The current list crdt states ORMAP are {current_list}")
+                current_list["crdt_states"]["ORMap"] = current_list["crdt_states"]["ORMap"].to_dict()
+                current_list["crdt_states"]["PNCounter"] = current_list["crdt_states"]["PNCounter"].to_dict()
+                print(f"Sending response to the load balancer {current_list}")
                 
-                existing_lists.append(list)
+                existing_lists.append(current_list)
                 with open(f"server/server_list_{ident}.json", "w") as file:
                     json.dump(existing_lists, file, indent=4)
-
-                response = {"status" :"success", "message": f"List created: {list['items']}"}   
+                response = {"status" :"success", "message": f"List created: {current_list}"}   
             
             elif action =="delete_list": 
                 with open(f"server/server_list_{ident}.json", "r") as file: 
