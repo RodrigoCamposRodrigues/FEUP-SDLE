@@ -2,7 +2,6 @@ from __future__ import print_function
 import zmq
 import json
 import sys
-from GlobalCounter import GlobalCounter
 from PNCounter import PNCounter
 import uuid
 from ORMap import ORMap, DotContext
@@ -15,29 +14,63 @@ client_lists = {}
 orMaps = {}
 
 
+
 def check_lists_in_global_counter(ident):
     file = "client/local_list_" + ident + ".json"
     with open(file,'r+') as file:
-        shopping_lists = json.load(file)
-
+        data = json.load(file)
+    shopping_lists = data["lists"]
+    print(f"The shopping_lists are {shopping_lists}")
     for shopping_list in shopping_lists: 
         if shopping_list["id"] not in client_lists: 
-            client_lists[shopping_list["id"]] = GlobalCounter(shopping_list["id"], shopping_list)
-            existing_data = read_list(ident, shopping_list["id"])
-            client_lists[shopping_list["id"]].list["items"] = existing_data["items"]
-            client_lists[shopping_list["id"]].list["crdt_states"] = existing_data["crdt_states"]
+            missingShoppingList = [temp for temp in shopping_lists if temp["id"] == shopping_list["id"]][0]
+            print(f"The missing shopping list is {missingShoppingList}")
+            client_lists[shopping_list["id"]] = copy.deepcopy(missingShoppingList)
+            client_lists[shopping_list["id"]]["crdt_states"] = {} 
+            client_lists[shopping_list["id"]]["crdt_states"]["ORMap"] = {}
+            client_lists[shopping_list["id"]]["crdt_states"]["ORMap"] = ORMap.from_dict(client_lists[shopping_list["id"]]["crdt_states"]["ORMap"],ident)
+            client_lists[shopping_list["id"]]["crdt_states"]["PNCounter"] = {}
+            client_lists[shopping_list["id"]]["crdt_states"]["PNCounter"] = PNCounter.from_dict(client_lists[shopping_list["id"]]["crdt_states"]["PNCounter"])
+            
 
 
 # Get the shopping list from the local_list.json file 
 def read_list(ident, id):
     json_file = 'client/local_list_'+ ident + ".json" 
     with open(json_file, 'r') as file:
-        shopping_lists = json.load(file)
-    
+        data = json.load(file)
+    shopping_lists = data["lists"]
     shopping_list = {}
     for shopping_list in shopping_lists:
         if shopping_list['id'] == id: 
             return shopping_list
+        
+def read_ListOrMap(ident,listId):
+    data = read_file(ident) 
+    orMapsList = data["ORMapList"]
+    for current_list in orMapsList["items"]: 
+        print(f"The current list is {current_list}")
+        if current_list["items"]:
+            key = list(current_list["items"].keys())[0]
+            if key == listId:
+                return current_list
+        else:
+            continue
+        
+        
+def updateListOrMap(ident,orMapChanged, listId): 
+    data = read_file(ident) 
+    for current_list in data["ORMapList"]: 
+        if current_list["items"]:
+            key = list(current_list["items"].keys())[0]
+            if key == listId: 
+                print(f"Making Changes ...")
+                current_list.update(orMapChanged)
+        else:
+            continue
+        
+
+    write_file(ident,data)
     
 def create_list(ident): 
     shopping_list = {"id": None, "name": "", "items": {}}
@@ -64,25 +97,14 @@ def create_list(ident):
     shopping_list["crdt_states"]["ORMap"] = map1.to_dict()
     shopping_list["crdt_states"]["PNCounter"] = pncounter1.to_dict()
     print(f"the shopping_list is 1111 {shopping_list["crdt_states"]["PNCounter"]}")
-    json_file = 'client/local_list_' + ident + ".json"
+
+
+    data = read_file(ident)
     
-    with open(json_file, 'r') as file:
-        existing_data = json.load(file)
-        
-    if isinstance(existing_data, dict):
-        existing_data = [existing_data]
-
-
-    #orMaps[shopping_list["id"]] = {}
-    #orMaps[shopping_list["id"]] = map1
-
-    #print(f"THe map1 after creating the list is {orMaps}")
-    
-    existing_data.append(shopping_list)
+    data["lists"].append(shopping_list)
 
     
-    with open(json_file, 'w') as file:
-        json.dump(existing_data, file, indent=4)
+    write_file(ident, data)
 
 
     print(f"The shopping_list created is {shopping_list}")
@@ -103,12 +125,29 @@ def write_file(ident, data):
     with open(json_file, 'w') as file:
         json.dump(data, file, indent=4)
 
-def client_update_list(ident):
-    socket = create_socket(ident)
+def check_active_lists(ident, clientLists):
+    data = read_file(ident)
+
+    # Check which lists are in the tombstones
+    deleted_lists = []
+    for current_list in data["ORMapList"]["tombstones"]: 
+        print(f"The current_list is {current_list}")
+        if current_list["tombstones"] != {}: 
+            keyToRemove = list(current_list["tombstones"].keys())[0]
+            deleted_lists.append(int(keyToRemove))
+
+    print(f"The keys to remove are {deleted_lists}")
+    clientLists["lists"] = [activeList for activeList in clientLists["lists"] if int(activeList["id"]) not in deleted_lists]             
+    print(f"The returned clietnLists are {clientLists}")
+    return clientLists
+            
+
+def client_update_list(ident, socket):
     overview = read_file(ident) 
+    #activeLists = check_active_lists(ident,copy.deepcopy(overview))
     print(f"------------------------------------------------------")
     print(f"Client-{ident} shopping lists: ")
-    for list in overview: 
+    for list in overview["lists"]: 
         print(f"List id: {list['id']} - List name: {list['name']}")
         print(f"Items: {list['items']}")
     print(f"------------------------------------------------------")
@@ -127,11 +166,11 @@ def client_update_list(ident):
         print(f"The reply_decoded is {reply_decoded}")
         current_list = reply_decoded.get("list")
 
-        existing_data = read_file(ident)
+        data = read_file(ident)
 
-        existing_data.append(current_list)
+        data["lists"].append(current_list)
         
-        write_file(ident, existing_data)
+        write_file(ident, data)
 
         current_list = read_list(ident, int(list_id_input))
         check_lists_in_global_counter(ident)
@@ -247,59 +286,68 @@ def client_update_list(ident):
         current_list["crdt_states"]["ORMap"] = current_list["crdt_states"]["ORMap"].to_dict()
         current_list["crdt_states"]["PNCounter"] = current_list["crdt_states"]["PNCounter"].to_dict()
         
-    existing_data  = read_file(ident)
+    data  = read_file(ident)
 
 
     
-    for cart in existing_data: 
+    for cart in data["lists"]: 
         if cart["id"] == current_list["id"]:
             cart["items"] = current_list["items"]
             cart["crdt_states"]["ORMap"] = current_list["crdt_states"]["ORMap"]
             cart["crdt_states"]["PNCounter"] = current_list["crdt_states"]["PNCounter"]
 
-    write_file(ident, existing_data)
+    write_file(ident, data)
 
-def create_socket(ident): 
-    socket = zmq.Context().socket(zmq.REQ)
-    socket.identity = u"Client-{}".format(ident).encode("ascii")
-    socket.connect("ipc://frontend.ipc")
-    return socket
 
-def client_remove_list(ident): 
-    socket = zmq.Context().socket(zmq.REQ)
-    socket.identity = u"Client-{}".format(ident).encode("ascii")
-    socket.connect("ipc://frontend.ipc")
-
+def client_remove_list(ident, socket): 
     # Ask for a specific id
     list_id_input = input("Please enter the id of the list you want to remove :")
-    list_to_send = {}    
+    list_to_send = read_list(ident, int(list_id_input))
     # Read all the lists from the local file
-    json_file = 'client/local_list_' + ident + ".json"
-    with open(json_file, 'r') as file:
-        existing_data = json.load(file)
-    
-    # Iterate over the lists until found the one to remove
-    for list_aux in existing_data:
-        if int(list_aux["id"]) == int(list_id_input):
-            list_to_send = list_aux
-            existing_data.remove(list_aux)
-            break
-    
+    data = read_file(ident)
+
+    orMapToChange = data["ORMapList"]
+
+    print(f"Founded orMapTochange {orMapToChange}")
+
+    orMapToChangeObject = ORMap.from_dict(copy.deepcopy(orMapToChange), ident)
+
+    orMapToChangeObject = orMapToChangeObject.delete_list(list_id_input)    
+
+    orMapToChange = orMapToChangeObject.to_dict()
+
+    print(f"The new updated orMap is {orMapToChange}")
+
+    # updateListOrMap(ident,orMapToChange,list_id_input)
+
     # Save without the removed list
-    with open(json_file, 'w') as file:
-        json.dump(existing_data, file, indent=4)
+    send_list = input("Do you want to send the updated list to the load balancer? (y/n): ")
+    if send_list == "y":
+        data = read_file(ident)
+        print(f"Sending request to the load balancer with list to remove: {list_to_send} with data {data["ORMapList"]}")
+        # Send a request with the list to remove
+        request = {"action": "delete_list", "list": list_to_send, "ORMapListData" : orMapToChange}
+        socket.send(json.dumps(request).encode("utf-8"))
 
-    # Send a request with the list to remove
-    request = {"action": "delete_list", "list": list_to_send}
-    socket.send(json.dumps(request).encode("utf-8"))
+        # Get reply from load balancer (response from worker)
+        reply = socket.recv()
+        print("{}: {}".format(socket.identity.decode("ascii"),
+                            reply.decode("utf-8")))
+        
+        reply_decoded = json.loads(reply.decode("utf-8"))
 
-    # Get reply from load balancer (response from worker)
-    reply = socket.recv()
-    print("{}: {}".format(socket.identity.decode("ascii"),
-                          reply.decode("utf-8")))
+
+        ORMapServer = reply_decoded.get("ORMapListData")
+        ORMapServerObject = ORMap.from_dict(ORMapServer,ident)
+        orMapObject = ORMap.from_dict(orMapToChange,ident)
+        orMapObject = orMapObject.join_lists(ORMapServerObject)
+        orMapDict = orMapObject.to_dict()
+        data["ORMapList"] = orMapDict
+        print(f"The data after deleting is {data}")
+
+        
+    write_file(ident, data)
     
-    # Remove the list from the global_counter_list
-    del global_counter_list[int(list_id_input)]
 
 def orMapToJson(orMaps, current_list): 
     temp = {}
@@ -309,18 +357,28 @@ def orMapToJson(orMaps, current_list):
     print(f"The temp in the client is {temp}")
     return temp
 
-def client_create_list(ident): 
-    socket = zmq.Context().socket(zmq.REQ)
-    socket.identity = u"Client-{}".format(ident).encode("ascii")
-    socket.connect("ipc://frontend.ipc")
+def client_create_list(ident, socket): 
     # Client requests a specific list
     shopping_list = create_list(ident)
 
-    # Send updated list to the load balancer
-    # temp = orMapToJson(orMaps,shopping_list)
-    print(f"The PNCounter is {shopping_list}")
+    # Create the ORMap object to manage the lists (add/remote) operations
+    data = read_file(ident) 
+
+    if data["ORMapList"] == {}: 
+        map2 = ORMap(ident).add_list(shopping_list["id"])
+        map2 = map2.to_dict()
+        data["ORMapList"] = map2
+    else: 
+        orMapObject = ORMap.from_dict(data["ORMapList"], ident)
+        orMapObject = orMapObject.add_list(shopping_list["id"])
+        data["ORMapList"] = orMapObject.to_dict()
+
+    orMapObject = ORMap.from_dict(data["ORMapList"],ident)
+
+    write_file(ident,data)
     
-    request = {"action": "create_list", "list_id": shopping_list['id'], "list": shopping_list}
+    
+    request = {"action": "create_list", "list_id": shopping_list['id'], "list": shopping_list, "ORMapListData" : data["ORMapList"]}
 
     print(f"Client-{ident} sending request to load balancer: {request}")
 
@@ -332,6 +390,16 @@ def client_create_list(ident):
 
         # Get reply from load balancer (response from worker)
         reply = socket.recv()
+    
+        reply_decoded = json.loads(reply.decode("utf-8"))   
+
+        ORMapServer = reply_decoded.get("ORMapListData")
+        ORMapServerObject = ORMap.from_dict(ORMapServer,ident)
+        print(f"The ORMapServerObject is {ORMapServerObject.obj}")
+        print(f"The orMapObject is {orMapObject.obj}")
+        orMapObject = orMapObject.join_lists(ORMapServerObject) 
+        orMapDict = orMapObject.to_dict()
+        data["ORMapList"] = orMapDict
         print("{}: {}".format(socket.identity.decode("ascii"),
                             reply.decode("utf-8")))
     
@@ -342,6 +410,9 @@ def client_create_list(ident):
 
 if __name__ == '__main__':
     ident = sys.argv[1] 
+    socket = zmq.Context().socket(zmq.REQ)
+    socket.identity = u"Client-{}".format(ident).encode("ascii")
+    socket.connect("ipc://frontend.ipc")
     while(1): 
         check_lists_in_global_counter(ident)
         print(f"---------------------------------")
@@ -354,10 +425,10 @@ if __name__ == '__main__':
         input_user = int(input("Enter the action you want to do: "))
        
         if input_user == 1: 
-            client_create_list(ident)
+            client_create_list(ident, socket)
         elif input_user == 2: 
-            client_update_list(ident)
+            client_update_list(ident, socket)
         elif input_user == 3: 
-            client_remove_list(ident)
+            client_remove_list(ident, socket)
         elif input_user == 4: 
             break
