@@ -195,6 +195,7 @@ def client_update_list(ident, socket):
             item_name = input("Enter the name of the item you want to remove: ")
             current_list['crdt_states']['ORMap'], current_list['crdt_states']['PNCounter'] = current_list['crdt_states']['ORMap'].delete_item(item_name, current_list['crdt_states']['PNCounter'])
             del current_list["items"][item_name]
+            print("current list items are: ", current_list["items"])
         if action == 3: 
             # Ask the user to update the quantity of an item
             item_name = input("Enter the name of the item you want to update: ")
@@ -289,6 +290,8 @@ def client_remove_list(ident, socket):
 
     data['ORMapList'] = orMapToChange
 
+    print(f"Current data after deletion is: ", data)
+
     # updateListOrMap(ident,orMapToChange,list_id_input)
 
     # Save without the removed list
@@ -314,8 +317,10 @@ def client_remove_list(ident, socket):
         orMapObject = orMapObject.join_lists(ORMapServerObject)
         orMapDict = orMapObject.to_dict()
         data['ORMapList'] = orMapDict
-        
+
     write_file(ident, data)
+    check_active_lists(ident, data)
+
     
 
 def orMapToJson(orMaps, current_list): 

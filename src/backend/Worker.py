@@ -210,8 +210,6 @@ def worker_task(ident):
 
                     # Update the list on the current worker
                     updated_list = merge_and_update_list(ident, clientList, pnCounterStates, orMapStates)
-                    response = {"status": "success", "list": updated_list}
-
 
                     replication_thread = threading.Thread(
                         target=replicate_to_workers,
@@ -219,8 +217,13 @@ def worker_task(ident):
                         daemon=True
                     )
                     replication_thread.start()
+
+                    response = {"status": "success", "list": updated_list}
+
                     
                 elif action == "create_list":
+                    preference_list = request_data.get("preference_list", [])
+
                     data = read_file(ident)
                     clientORMapListData = request_data.get("ORMapListData")
 
@@ -235,22 +238,35 @@ def worker_task(ident):
                     data["lists"].append(current_list)
                     write_file(ident,data)
                     print(f"Sending response to the load balancer {current_list}")
+
+                    replication_thread = threading.Thread(
+                        target=replicate_to_workers,
+                        args=(preference_list, current_list, context, clientId),
+                        daemon=True
+                    )
+
+                    replication_thread.start()
+
                     response = {"status" :"success", "message": f"List created: {current_list}", "ORMapListData": orMapDict}   
                 
-                elif action =="delete_list": 
+                elif action == "delete_list":
+                    print(f"Deleting list {clientList}")
                     data = read_file(ident)
-                    listToRemove = current_list
+                    listToRemove = clientList
                     clientORMapListData = request_data.get("ORMapListData")
-                    orMapObject = ORMap.from_dict(data["ORMapList"],clientId)
-                    orMapObjectClient = ORMap.from_dict(clientORMapListData,clientId)
+                    
+                    # Update ORMapList
+                    orMapObject = ORMap.from_dict(data["ORMapList"], clientId)
+                    orMapObjectClient = ORMap.from_dict(clientORMapListData, clientId)
                     orMapObject = orMapObject.join_lists(orMapObjectClient)
                     orMapDict = orMapObject.to_dict()
                     data["ORMapList"] = orMapDict
-                    write_file(ident,data)
-                    print(f"Sending response to the load balancer {current_list} with data {data}")
-
-
-                    response = {"status": "success", "message": f"List deleted: {list['id']}", "ORMapListData": orMapDict}
+                    
+                    # Write the updated data back to the JSON file
+                    write_file(ident, data)
+                    
+                    print(f"Sending response to the load balancer {listToRemove} with data {data}")
+                    response = {"status": "success", "message": f"List deleted: {listToRemove['id']}", "ORMapListData": orMapDict}
                 else:
                     response = {"status": "error", "message": "Invalid action"}
             except Exception as e:
