@@ -217,10 +217,13 @@ def client_update_list(ident):
     send_list = input("Do you want to send the updated list to the load balancer? (y/n): ")
     if(send_list == "y"): 
         socket.send(json.dumps(request).encode("utf-8"))
+
+        print("request: ", request)
         
         reply = socket.recv()
         reply_decoded = json.loads(reply.decode("utf-8"))
         list_server = reply_decoded.get("list")
+        print(f"The received list from the worker is {list_server}")
         print(f"The received list from the worker is {list_server}")
         list_server['crdt_states']['ORMap'] = ORMap.from_dict(list_server['crdt_states']['ORMap'],ident)
         list_server['crdt_states']['PNCounter'] = PNCounter.from_dict(list_server['crdt_states']['PNCounter'])

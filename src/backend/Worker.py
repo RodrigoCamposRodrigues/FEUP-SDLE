@@ -11,17 +11,19 @@ import copy
 orMaps = {}
 global_counter_list = {}
 
-def replicate_to_workers(preference_list, global_counter_dict, context):
+def replicate_to_workers(preference_list, global_counter_dict, context, clientId):
     print("preference list is ", preference_list)
     for worker in preference_list:
         print(f"Replicating to worker {worker}")
+        print("global_counter_dict ", global_counter_dict)
         replicate_socket = context.socket(zmq.REQ)
         replicate_socket.connect(f"ipc://{worker}.replicate.ipc")
         try:
             replicate_request = {
                 "action": "replicate_list",
-                "list": global_counter_dict["list"],
-                "crdt_states": global_counter_dict["crdt_states"]
+                "list": global_counter_dict,
+                "crdt_states": global_counter_dict["crdt_states"],
+                "client_id": clientId
             }
 
             replicate_socket.send_json(replicate_request)
@@ -89,6 +91,7 @@ def merge_and_update_list(ident, client_list, pn_counter_states, or_map_states):
 
     print(f"The action inside is update_list")
     print(f"The list inside is {client_list}")
+    print("pn_counter_states", pn_counter_states)
     current_list["crdt_states"]["PNCounter"], current_list["items"] = current_list["crdt_states"]["PNCounter"].merge_version(copy.deepcopy(current_list), pn_counter_states)
     print(f"The new updated list PNCounter is {current_list['crdt_states']['PNCounter'].obj} with items {current_list['items']}")
     current_list["crdt_states"]["ORMap"], current_list["items"] = current_list["crdt_states"]["ORMap"].join(copy.deepcopy(current_list), or_map_states)
@@ -128,7 +131,7 @@ def worker_task(ident):
     print(f"Worker-{ident} started and connected to backend.")
 
     while True:
-        print(f"Worker-{ident} polling for events...")
+        #print(f"Worker-{ident} polling for events...")
         poller = zmq.Poller()
         poller.register(socket, zmq.POLLIN)
         poller.register(health_socket, zmq.POLLIN)
@@ -136,7 +139,7 @@ def worker_task(ident):
 
         events = dict(poller.poll())
 
-        print(f"Worker-{ident} events: {events}")
+        #print(f"Worker-{ident} events: {events}")
 
         if replicate_socket in events:
             message = replicate_socket.recv_json()
@@ -144,10 +147,12 @@ def worker_task(ident):
 
             action = message.get("action")
             if action == "replicate_list":
-                list = message.get("list")
+                clist = message.get("list")
                 crdt_states = message.get("crdt_states")
-                global_counter_dict = merge_and_update_list(ident, list, crdt_states["PNCounter"], crdt_states["ORMap"])
-                response = {"status": "success", "list": global_counter_dict["list"], "crdt_states": global_counter_dict["crdt_states"]}
+                crdt_states["PNCounter"] = PNCounter.from_dict(crdt_states["PNCounter"])
+                crdt_states["ORMap"] = ORMap.from_dict(crdt_states["ORMap"], message.get("client_id"))
+                global_counter_dict = merge_and_update_list(ident, clist, crdt_states["PNCounter"], crdt_states["ORMap"])
+                response = {"status": "success", "list": global_counter_dict, "crdt_states": global_counter_dict["crdt_states"]}
                 replicate_socket.send_json(response)
             continue
 
@@ -173,14 +178,15 @@ def worker_task(ident):
 
             try:
                 request_data = json.loads(request.decode("utf-8"))
+                print("request_data", request_data)
                 clientId = address.decode("utf-8")
                 clientId = clientId.split("-")[1]
                 print(f"The client id is {clientId}")
 
                 action = request_data.get("action")
                 client_list = request_data.get("list", {})
-                crdt_states = request_data.get("crdt_states", {})
-                print(f"The list is {client_list}")
+                crdt_states = client_list.get("crdt_states", {})
+                print(f"The crdt_states are {crdt_states}")
                 pn_counter_states = crdt_states.get('PNCounter', {})
                 print(f"The pnCounterStates are {pn_counter_states}")
                 or_map_states = crdt_states.get('ORMap', {})
@@ -222,16 +228,29 @@ def worker_task(ident):
                 elif action == "update_list":
                     preference_list = request_data.get("preference_list", [])
 
+                    print(f"XXUpdating list with preference list: {preference_list}")
+
                     # Update the list on the current worker
                     updated_list = merge_and_update_list(ident, client_list, pn_counter_states, or_map_states)
+
+                    print(f"XXUpdated list: {updated_list}")
                     response = {"status": "success", "list": updated_list}
+
+                    # XXUpdated list: {'id': 30955084526635704674066645087379932118, 'name': 'mc', 
+                    # 'items': {'carne': 0}, 
+                    # 'crdt_states': {'ORMap': {'items': {'carne': ['0:1']}, 
+                    # 'tombstones': {}, 
+                    # 'context': {'0': ['0:1']}, 'actor_id': 30955084526635704674066645087379932118}, 
+                    # 'PNCounter': {'carne': {'0': {'inc': 5, 'dec': 5}}}}}
 
                     replication_thread = threading.Thread(
                         target=replicate_to_workers,
-                        args=(preference_list, updated_list, context),
+                        args=(preference_list, updated_list, context, clientId),
                         daemon=True
                     )
                     replication_thread.start()
+
+                    print(f"Replication thread ended")
                     
                 elif action == "create_list":
                     print(f"Entering create_list")
