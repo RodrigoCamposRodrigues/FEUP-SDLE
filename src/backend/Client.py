@@ -21,11 +21,11 @@ def check_lists_in_global_counter(ident):
         shopping_lists = json.load(file)
 
     for shopping_list in shopping_lists: 
-        if shopping_list["id"] not in client_lists: 
-            client_lists[shopping_list["id"]] = GlobalCounter(shopping_list["id"], shopping_list)
-            existing_data = read_list(ident, shopping_list["id"])
-            client_lists[shopping_list["id"]].list["items"] = existing_data["items"]
-            client_lists[shopping_list["id"]].list["crdt_states"] = existing_data["crdt_states"]
+        if shopping_list['id'] not in client_lists: 
+            client_lists[shopping_list['id']] = GlobalCounter(shopping_list['id'], shopping_list)
+            existing_data = read_list(ident, shopping_list['id'])
+            client_lists[shopping_list['id']].list['items'] = existing_data['items']
+            client_lists[shopping_list['id']].list['crdt_states'] = existing_data['crdt_states']
 
 
 # Get the shopping list from the local_list.json file 
@@ -40,8 +40,8 @@ def read_list(ident, id):
             return shopping_list
     
 def create_list(ident): 
-    shopping_list = {"id": None, "name": "", "items": {}}
-    shopping_list["id"] = uuid.uuid4().int
+    shopping_list = {'id': None, "name": "", 'items': {}}
+    shopping_list['id'] = uuid.uuid4().int
     print(f"------------------------------------------------------")
     shopping_list["name"] = input("Enter the name of the list: ")
     num_items = int(input("Enter the number of items in the list: "))
@@ -50,20 +50,20 @@ def create_list(ident):
     print(f"The pncounter1 is {pncounter1.obj}")
     for i in range(num_items): 
         item_name = input(f"Enter the name of item {i + 1}: ")
-        shopping_list["items"][item_name] = 0
-        shopping_list["crdt_states"] = {}
-        shopping_list["crdt_states"]["ORMap"] = {}  
+        shopping_list['items'][item_name] = 0
+        shopping_list['crdt_states'] = {}
+        shopping_list['crdt_states']['ORMap'] = {}  
         map1,pncounter1 = map1.add_item(item_name, pncounter1)
         print(f"The pncounter2 is {pncounter1.obj}")
 
-    shopping_list["crdt_states"]["PNCounter"] = pncounter1.obj
+    shopping_list['crdt_states']['PNCounter'] = pncounter1.obj
 
-    client_lists[shopping_list["id"]] = copy.deepcopy(shopping_list) 
+    client_lists[shopping_list['id']] = copy.deepcopy(shopping_list) 
     
     print(f"The shopping_list is 11232312 {pncounter1.obj}")
-    shopping_list["crdt_states"]["ORMap"] = map1.to_dict()
-    shopping_list["crdt_states"]["PNCounter"] = pncounter1.to_dict()
-    print(f"the shopping_list is 1111 {shopping_list["crdt_states"]["PNCounter"]}")
+    shopping_list['crdt_states']['ORMap'] = map1.to_dict()
+    shopping_list['crdt_states']['PNCounter'] = pncounter1.to_dict()
+    print(f"the shopping_list is 1111 {shopping_list['crdt_states']['PNCounter']}")
     json_file = 'client/local_list_' + ident + ".json"
     
     with open(json_file, 'r') as file:
@@ -73,8 +73,8 @@ def create_list(ident):
         existing_data = [existing_data]
 
 
-    #orMaps[shopping_list["id"]] = {}
-    #orMaps[shopping_list["id"]] = map1
+    #orMaps[shopping_list['id']] = {}
+    #orMaps[shopping_list['id']] = map1
 
     #print(f"THe map1 after creating the list is {orMaps}")
     
@@ -144,38 +144,38 @@ def client_update_list(ident):
     print(f"---------------------------------------------------")
     action = int(input("Enter the action you want to do: "))
 
-    current_list["crdt_states"]["ORMap"] = ORMap.from_dict(current_list["crdt_states"]["ORMap"],ident)
-    current_list["crdt_states"]["PNCounter"] = PNCounter.from_dict(current_list["crdt_states"]["PNCounter"])
+    current_list['crdt_states']['ORMap'] = ORMap.from_dict(current_list['crdt_states']['ORMap'],ident)
+    current_list['crdt_states']['PNCounter'] = PNCounter.from_dict(current_list['crdt_states']['PNCounter'])
 
     if action == 1: 
         # Ask the user to add an item to the list
         item_name = input("Enter the name of the item you want to add: ")
         print(f"The shopping list before adding the item is {current_list}")
-        #if current_list["id"] not in orMaps: 
-        #    orMaps[current_list["id"]] = ORMap(ident)
-        # orMapsOther = ORMap.from_dict(current_list["crdt_states"]["ORMap"])
+        #if current_list['id'] not in orMaps: 
+        #    orMaps[current_list['id']] = ORMap(ident)
+        # orMapsOther = ORMap.from_dict(current_list['crdt_states']['ORMap'])
         #print(f"THe orMaps[current_list[id]] in the Client is {orMaps[current_list['id']]}")
-        #print(f"The global_counter_list in the client is {global_counter_list[current_list["id"]].list["crdt_states"]["ORMap"]}")
+        #print(f"The global_counter_list in the client is {global_counter_list[current_list['id']].list['crdt_states']['ORMap']}")
         #print(f"The orMapsOther in the Client is {orMapsOther}")
-        #teste = orMaps[current_list["id"]].join(orMapsOther)
-        #orMaps[current_list["id"]] = teste
-        #global_counter_list[current_list["id"]].list["crdt_states"]["ORMap"] = teste
+        #teste = orMaps[current_list['id']].join(orMapsOther)
+        #orMaps[current_list['id']] = teste
+        #global_counter_list[current_list['id']].list['crdt_states']['ORMap'] = teste
         #print(f"After joining the orMaps are {teste}")
-        current_list["crdt_states"]["ORMap"], current_list["crdt_states"]["PNCounter"] = current_list["crdt_states"]["ORMap"].add_item(item_name, current_list["crdt_states"]["PNCounter"])
-        print(current_list["items"])
-        current_list["items"][item_name] = 0
-        print(f"the ormap is {current_list["crdt_states"]["ORMap"].obj} and its respective context is {current_list["crdt_states"]["ORMap"].obj["context"].dots}")
-        print(current_list["crdt_states"]["PNCounter"].obj) 
-        teste = current_list["crdt_states"]["ORMap"].to_dict()
+        current_list['crdt_states']['ORMap'], current_list['crdt_states']['PNCounter'] = current_list['crdt_states']['ORMap'].add_item(item_name, current_list['crdt_states']['PNCounter'])
+        print(current_list['items'])
+        current_list['items'][item_name] = 0
+        print(f"the ormap is {current_list['crdt_states']['ORMap'].obj} and its respective context is {current_list['crdt_states']['ORMap'].obj['context'].dots}")
+        print(current_list['crdt_states']['PNCounter'].obj) 
+        teste = current_list['crdt_states']['ORMap'].to_dict()
         print(teste)
         #print(f"---------------------------------------------------")
-        #print(f"The ormaps after adding the item is {global_counter_list[current_list["id"]].list['crdt_states']['ORMap']}")
+        #print(f"The ormaps after adding the item is {global_counter_list[current_list['id']].list['crdt_states']['ORMap']}")
         #print(f"---------------------------------------------------")
     if action == 2: 
         # Ask the user to remove an item from the list
         item_name = input("Enter the name of the item you want to remove: ")
-        current_list["crdt_states"]["ORMap"], current_list["crdt_states"]["PNCounter"] = current_list["crdt_states"]["ORMap"].delete_item(item_name, current_list["crdt_states"]["PNCounter"])
-        del current_list["items"][item_name]
+        current_list['crdt_states']['ORMap'], current_list['crdt_states']['PNCounter'] = current_list['crdt_states']['ORMap'].delete_item(item_name, current_list['crdt_states']['PNCounter'])
+        del current_list['items'][item_name]
         print(f"---------------------------------------------------")
         print(f"The orMaps after removing the item is {current_list}")
         print(f"---------------------------------------------------")
@@ -185,29 +185,29 @@ def client_update_list(ident):
 
         times_inc = input("Enter the number of times you want to increment the item: ")
         for i in range(int(times_inc)):
-            current_list["crdt_states"]["PNCounter"].increment_value(ident,item_name)
+            current_list['crdt_states']['PNCounter'].increment_value(ident,item_name)
 
         times_dec = input("Enter the number of times you want to decrement the item: ")
         for i in range(int(times_dec)):
-            current_list["crdt_states"]["PNCounter"].decrement_value(ident,item_name)
+            current_list['crdt_states']['PNCounter'].decrement_value(ident,item_name)
             
     # Send updated list to the load balancer
     print(f"---------------------------------------------------")
     print(f"The updated list {current_list['name']}")
-    print(f"PNCounter Object : {current_list["crdt_states"]["PNCounter"].obj}") 
-    print(f"ORMap Object : {current_list["crdt_states"]["ORMap"].obj}")
-    print(f"ORMap dots : {current_list["crdt_states"]["ORMap"].obj["context"].dots}")
+    print(f"PNCounter Object : {current_list['crdt_states']['PNCounter'].obj}") 
+    print(f"ORMap Object : {current_list['crdt_states']['ORMap'].obj}")
+    print(f"ORMap dots : {current_list['crdt_states']['ORMap'].obj['context'].dots}")
     print(f"Items: {current_list['items']}")
     print(f"---------------------------------------------------")
     # temp = orMapToJson(orMaps,current_list)
-    # global_counter_list[current_list["id"]].list["crdt_states"]["ORMap"] = orMaps[current_list["id"]]
+    # global_counter_list[current_list['id']].list['crdt_states']['ORMap'] = orMaps[current_list['id']]
     # Copy the contents of the global_Counter_list to a new variable
-    current_list["crdt_states"]["ORMap"] = current_list["crdt_states"]["ORMap"].to_dict()
-    current_list["crdt_states"]["PNCounter"] = current_list["crdt_states"]["PNCounter"].to_dict()
+    current_list['crdt_states']['ORMap'] = current_list['crdt_states']['ORMap'].to_dict()
+    current_list['crdt_states']['PNCounter'] = current_list['crdt_states']['PNCounter'].to_dict()
 
     request = {
         "action": "update_list",
-        "list_id": current_list["id"],
+        "list_id": current_list['id'],
         "list": current_list
     }
 
@@ -222,40 +222,40 @@ def client_update_list(ident):
         reply_decoded = json.loads(reply.decode("utf-8"))
         list_server = reply_decoded.get("list")
         print(f"The received list from the worker is {list_server}")
-        list_server["crdt_states"]["ORMap"] = ORMap.from_dict(list_server["crdt_states"]["ORMap"],ident)
-        list_server["crdt_states"]["PNCounter"] = PNCounter.from_dict(list_server["crdt_states"]["PNCounter"])
+        list_server['crdt_states']['ORMap'] = ORMap.from_dict(list_server['crdt_states']['ORMap'],ident)
+        list_server['crdt_states']['PNCounter'] = PNCounter.from_dict(list_server['crdt_states']['PNCounter'])
 
-        current_list["crdt_states"]["ORMap"] = ORMap.from_dict(current_list["crdt_states"]["ORMap"],ident)
-        current_list["crdt_states"]["PNCounter"] = PNCounter.from_dict(current_list["crdt_states"]["PNCounter"])
+        current_list['crdt_states']['ORMap'] = ORMap.from_dict(current_list['crdt_states']['ORMap'],ident)
+        current_list['crdt_states']['PNCounter'] = PNCounter.from_dict(current_list['crdt_states']['PNCounter'])
 
-        current_list["crdt_states"]["PNCounter"], current_list["items"] = current_list["crdt_states"]["PNCounter"].merge_version(current_list, list_server["crdt_states"]["PNCounter"])
-        current_list["crdt_states"]["ORMap"], current_list["items"] = current_list["crdt_states"]["ORMap"].join(current_list, list_server["crdt_states"]["ORMap"])
+        current_list['crdt_states']['PNCounter'], current_list['items'] = current_list['crdt_states']['PNCounter'].merge_version(current_list, list_server['crdt_states']['PNCounter'])
+        current_list['crdt_states']['ORMap'], current_list['items'] = current_list['crdt_states']['ORMap'].join(current_list, list_server['crdt_states']['ORMap'])
         print(f"The new updated list is {current_list}")
         # Merge the existing list with the received list from the server
-        current_list["crdt_states"]["ORMap"] = current_list["crdt_states"]["ORMap"].to_dict()
-        current_list["crdt_states"]["PNCounter"] = current_list["crdt_states"]["PNCounter"].to_dict()
+        current_list['crdt_states']['ORMap'] = current_list['crdt_states']['ORMap'].to_dict()
+        current_list['crdt_states']['PNCounter'] = current_list['crdt_states']['PNCounter'].to_dict()
     # Change the quantity of the item in the local list
 
     else : 
         # Just calculate the merged value of the list
-        current_list["crdt_states"]["ORMap"] = ORMap.from_dict(current_list["crdt_states"]["ORMap"],ident)
-        current_list["crdt_states"]["PNCounter"] = PNCounter.from_dict(current_list["crdt_states"]["PNCounter"])
+        current_list['crdt_states']['ORMap'] = ORMap.from_dict(current_list['crdt_states']['ORMap'],ident)
+        current_list['crdt_states']['PNCounter'] = PNCounter.from_dict(current_list['crdt_states']['PNCounter'])
 
-        current_list["crdt_states"]["PNCounter"], current_list["items"] = current_list["crdt_states"]["PNCounter"].merge_version(current_list, current_list["crdt_states"]["PNCounter"])
-        current_list["crdt_states"]["ORMap"], current_list["items"] = current_list["crdt_states"]["ORMap"].join(current_list, current_list["crdt_states"]["ORMap"])
+        current_list['crdt_states']['PNCounter'], current_list['items'] = current_list['crdt_states']['PNCounter'].merge_version(current_list, current_list['crdt_states']['PNCounter'])
+        current_list['crdt_states']['ORMap'], current_list['items'] = current_list['crdt_states']['ORMap'].join(current_list, current_list['crdt_states']['ORMap'])
     
-        current_list["crdt_states"]["ORMap"] = current_list["crdt_states"]["ORMap"].to_dict()
-        current_list["crdt_states"]["PNCounter"] = current_list["crdt_states"]["PNCounter"].to_dict()
+        current_list['crdt_states']['ORMap'] = current_list['crdt_states']['ORMap'].to_dict()
+        current_list['crdt_states']['PNCounter'] = current_list['crdt_states']['PNCounter'].to_dict()
         
     existing_data  = read_file(ident)
 
 
     
     for cart in existing_data: 
-        if cart["id"] == current_list["id"]:
-            cart["items"] = current_list["items"]
-            cart["crdt_states"]["ORMap"] = current_list["crdt_states"]["ORMap"]
-            cart["crdt_states"]["PNCounter"] = current_list["crdt_states"]["PNCounter"]
+        if cart['id'] == current_list['id']:
+            cart['items'] = current_list['items']
+            cart['crdt_states']['ORMap'] = current_list['crdt_states']['ORMap']
+            cart['crdt_states']['PNCounter'] = current_list['crdt_states']['PNCounter']
 
     write_file(ident, existing_data)
 
@@ -280,7 +280,7 @@ def client_remove_list(ident):
     
     # Iterate over the lists until found the one to remove
     for list_aux in existing_data:
-        if int(list_aux["id"]) == int(list_id_input):
+        if int(list_aux['id']) == int(list_id_input):
             list_to_send = list_aux
             existing_data.remove(list_aux)
             break
@@ -305,7 +305,7 @@ def orMapToJson(orMaps, current_list):
     temp = {}
     print(f"The ormaps in Client are {orMaps}")
     print(f"The shopping list in the Client is {current_list}")
-    temp = orMaps[current_list["id"]].to_dict()
+    temp = orMaps[current_list['id']].to_dict()
     print(f"The temp in the client is {temp}")
     return temp
 

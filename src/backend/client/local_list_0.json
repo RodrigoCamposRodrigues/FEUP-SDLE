@@ -34,7 +34,7 @@
         "id": 30955084526635704674066645087379932118,
         "name": "mc",
         "items": {
-            "carne": 0
+            "carne": 1
         },
         "crdt_states": {
             "ORMap": {
@@ -54,7 +54,7 @@
             "PNCounter": {
                 "carne": {
                     "0": {
-                        "inc": 0,
+                        "inc": 1,
                         "dec": 0
                     }
                 }

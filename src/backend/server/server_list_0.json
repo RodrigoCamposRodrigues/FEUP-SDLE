@@ -3,7 +3,7 @@
         "id": 30955084526635704674066645087379932118,
         "name": "mc",
         "items": {
-            "carne": 0
+            "carne": 1
         },
         "crdt_states": {
             "ORMap": {
@@ -23,7 +23,7 @@
             "PNCounter": {
                 "carne": {
                     "0": {
-                        "inc": 0,
+                        "inc": 1,
                         "dec": 0
                     }
                 }
@@ -339,27 +339,27 @@
         "id": 49249745642742168357637313485322678815,
         "name": "porto",
         "items": {
-            "james": 20,
             "falcao": 10
         },
         "crdt_states": {
             "ORMap": {
                 "items": {
-                    "james": [
-                        "0:1"
-                    ],
                     "falcao": [
                         "0:2"
                     ]
                 },
-                "tombstones": {},
-                "context": {
-                    "0": [
-                        "0:1",
-                        "0:2"
+                "tombstones": {
+                    "james": [
+                        "0:1"
                     ]
                 },
-                "actor_id": "0"
+                "context": {
+                    "0": [
+                        "0:2",
+                        "0:1"
+                    ]
+                },
+                "actor_id": "1"
             },
             "PNCounter": {
                 "james": {

@@ -56,39 +56,29 @@
         "id": 49249745642742168357637313485322678815,
         "name": "porto",
         "items": {
-            "james": 10,
             "falcao": 10
         },
         "crdt_states": {
             "ORMap": {
                 "items": {
-                    "james": [
-                        "0:1"
-                    ],
                     "falcao": [
                         "0:2"
                     ]
                 },
-                "tombstones": {},
+                "tombstones": {
+                    "james": [
+                        "0:1"
+                    ]
+                },
                 "context": {
                     "0": [
-                        "0:2",
-                        "0:1"
+                        "0:1",
+                        "0:2"
                     ]
                 },
                 "actor_id": "1"
             },
             "PNCounter": {
-                "james": {
-                    "0": {
-                        "inc": 0,
-                        "dec": 0
-                    },
-                    "1": {
-                        "inc": 10,
-                        "dec": 0
-                    }
-                },
                 "falcao": {
                     "0": {
                         "inc": 0,
