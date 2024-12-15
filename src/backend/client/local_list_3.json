@@ -1,28 +1,7 @@
-[
-    {
-        "id": 87184592107225023994031495768746977192,
-        "name": "Burguer King",
-        "items": {
-            "carne": 6,
-            "alface": 10
-        },
-        "crdt_states": {
-            "carne": {
-                "0": {
-                    "inc": 14,
-                    "dec": 0
-                },
-                "1": {
-                    "inc": 3,
-                    "dec": 11
-                }
-            },
-            "alface": {
-                "1": {
-                    "inc": 10,
-                    "dec": 0
-                }
-            }
-        }
-    }
-]
+{
+    "ORMapList": {
+
+    },
+    "lists": [
+    ]
+}

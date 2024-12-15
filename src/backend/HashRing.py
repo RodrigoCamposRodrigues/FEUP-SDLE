@@ -40,8 +40,14 @@ class HashRing:
         return self.ring[self.sorted_keys[idx]]
     
     def get_preference_list(self, key, num_replicas = 3):
+        print(f"Ring: {len(self.ring)}")
         if not self.ring:
             return None
+        
+        if len(self.ring) == 6:
+            num_replicas = 2
+        elif len(self.ring) == 3:
+            num_replicas = 1
         
         hashed_key = self._hash(key)
         idx = bisect.bisect(self.sorted_keys, hashed_key)
@@ -67,22 +73,5 @@ class HashRing:
     def get_nodes(self):
         return list(set(self.ring.values()))
 
-"""
-def main():
-    nodes = ["Node1", "Node2", "Node3", "Node4", "Node5"]
-    hash_ring = HashRing(nodes)
-
-    key = "my_datakey"
-    preference_list = hash_ring.get_preference_list(key, num_replicas=3)
-    node = hash_ring.get_node(key)
-    print(f"Preference list for key '{key}': {preference_list}")
-
-
-
-if __name__ == "__main__":
-    main()
-
-
-"""
 
  
