@@ -223,8 +223,13 @@ def client_update_list(ident, socket):
         if action == 2: 
             # Ask the user to remove an item from the list
             item_name = input("Enter the name of the item you want to remove: ")
-            current_list['crdt_states']['ORMap'], current_list['crdt_states']['PNCounter'] = current_list['crdt_states']['ORMap'].delete_item(item_name, current_list['crdt_states']['PNCounter'])
-            del current_list["items"][item_name]
+            if (len(current_list["items"].items()) > 1):
+                current_list['crdt_states']['ORMap'], current_list['crdt_states']['PNCounter'] = current_list['crdt_states']['ORMap'].delete_item(item_name, current_list['crdt_states']['PNCounter'])
+                del current_list["items"][item_name]
+            else:
+                print(f"------------------------------------------------------")
+                print(f"Cannot remove the last item from the list")
+                print(f"------------------------------------------------------")
         if action == 3: 
             # Ask the user to update the quantity of an item
             item_name = input("Enter the name of the item you want to update: ")

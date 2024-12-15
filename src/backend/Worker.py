@@ -294,6 +294,9 @@ def worker_task(ident):
                     response = {"status": "success", "list": clientList, "RequestedORMap" : singlelistClientOrMapDict}
 
                 elif action == "update_list":
+
+                    data = read_file(ident)
+
                     preference_list = request_data.get("preference_list", [])
 
                     orMapDictClient = request_data.get("ORMapListData", {})
