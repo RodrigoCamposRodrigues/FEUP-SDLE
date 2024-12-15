@@ -257,15 +257,14 @@ def client_update_list(ident, socket):
             "ORMapListData" : data["ORMapList"]
         }
 
-        print(f"------------------------------------------------------")
-        print(f"Client-{ident} sending request to the Server")
-        print(f"List id: {current_list['id']} - List name: {current_list['name']}")
-        print(f"Items: {current_list['items']}")
-        print(f"------------------------------------------------------")
 
         # Ask the user if he wants to send the updated list to the load balancer 
         send_list = input("Do you want to synchronize with the Servers? (y/n): ")
         if(send_list == "y"): 
+            print(f"------------------------------------------------------")
+            print(f"Client-{ident} sending request to the Server")
+            print(f"------------------------------------------------------")
+
             socket.send(json.dumps(request).encode("utf-8"))
             
             reply = socket.recv()
@@ -315,6 +314,7 @@ def client_update_list(ident, socket):
         write_file(ident, data)
         print(f"------------------------------------------------------")
         print(f"List updated successfully!")
+        print(f"Current items are: {current_list['items']}")
         print(f"------------------------------------------------------")
     else: 
         print(f"No active lists found in the client ! ") 

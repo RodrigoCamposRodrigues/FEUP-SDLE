@@ -64,7 +64,6 @@ def main():
     while True:
         sockets = dict(poller.poll(timeout=1000))
         if not sockets:
-            print("No activity detected.")
             continue
 
         # Handle worker responses on the backend

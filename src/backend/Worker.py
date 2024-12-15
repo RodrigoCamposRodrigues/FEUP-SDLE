@@ -174,8 +174,6 @@ def worker_task(ident):
 
         events = dict(poller.poll())
 
-        print(f"Worker-{ident} events: {events}")
-
         if replicate_socket in events:
             message = replicate_socket.recv_json()
             print(f"Worker-{ident} received replication message: {message}")
