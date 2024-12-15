@@ -6,15 +6,19 @@ import threading
 from PNCounter import PNCounter
 from ORMap import ORMap, DotContext
 import copy
+import os
 
 orMaps = {}
 global_counter_list = {}
 
 def replicate_to_workers(preference_list, clientList, orMapObject, context, clientId):
-    
-    print("preference list is ", preference_list)
+    print(f"--------------------------------------")
+    print(f"Preference list is ", preference_list)
+    print(f"--------------------------------------")
     for worker in preference_list:
+        print(f"---------------------------------------")
         print(f"Replicating to worker {worker}")
+        print(f"---------------------------------------")
         replicate_socket = context.socket(zmq.REQ)
         replicate_socket.connect(f"ipc://{worker}.replicate.ipc")
         try:
@@ -26,11 +30,17 @@ def replicate_to_workers(preference_list, clientList, orMapObject, context, clie
             }
 
             replicate_socket.send_json(replicate_request)
+            print(f"---------------------------------------")
             print(f"Sent replicate_list to worker {worker}")
+            print(f"---------------------------------------")
             replicate_socket.recv()  
+            print(f"---------------------------------------")
             print(f"Replicated update to worker {worker}")
+            print(f"---------------------------------------")
         except Exception as e:
+            print(f"---------------------------------------")
             print(f"Failed to replicate to worker {worker}: {e}")
+            print(f"---------------------------------------")
         finally:
             replicate_socket.close()
 
@@ -48,11 +58,17 @@ def replicate_delete_to_workers(preference_list, orMapObject, context, clientId)
             }
 
             replicate_socket.send_json(replicate_request)
+            print(f"---------------------------------------")
             print(f"Sent replicate_list to worker {worker}")
+            print(f"---------------------------------------")
             replicate_socket.recv()  
+            print(f"---------------------------------------")
             print(f"Replicated update to worker {worker}")
+            print(f"---------------------------------------")
         except Exception as e:
+            print(f"---------------------------------------")
             print(f"Failed to replicate to worker {worker}: {e}")
+            print(f"---------------------------------------")
         finally:
             replicate_socket.close()
 
@@ -76,8 +92,15 @@ def orMapToJson(orMaps, shopping_list):
 
 def read_file(ident): 
     json_file = "server/server_list_" + ident + ".json"
-    with open(json_file, 'r') as file:
-        data = json.load(file)
+     # Create the file if it does not exist
+    if not os.path.exists(json_file):
+        with open(json_file, 'w') as file:
+            json.dump({"ORMapList": {}, "lists": []}, file, indent=4)
+    try:
+        with open(json_file, 'r') as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        data = {"ORMapList": {}, "lists": []}
 
     return data
 
@@ -99,14 +122,8 @@ def merge_and_update_list(ident, client_list, pn_counter_states, or_map_states):
         current_list["crdt_states"]["ORMap"] = or_map_states
         current_list["crdt_states"]["PNCounter"] = pn_counter_states
 
-    print(f"The action inside is update_list")
-    print(f"The list inside is {client_list}")
     current_list["crdt_states"]["PNCounter"], current_list["items"] = current_list["crdt_states"]["PNCounter"].merge_version(copy.deepcopy(current_list), pn_counter_states)
-    print(f"The new updated list PNCounter is {current_list['crdt_states']['PNCounter'].obj} with items {current_list['items']}")
     current_list["crdt_states"]["ORMap"], current_list["items"] = current_list["crdt_states"]["ORMap"].join(copy.deepcopy(current_list), or_map_states)
-    print(f"The new updated list ORMap is {current_list['crdt_states']['ORMap'].obj}")
-    print(f"The current list final ORMAPS is {current_list['crdt_states']['ORMap'].obj}")
-    print(f"The current list final PNCOUNTER is {current_list['crdt_states']['PNCounter'].obj}")
     current_list["crdt_states"]["ORMap"] = current_list["crdt_states"]["ORMap"].to_dict()
     current_list["crdt_states"]["PNCounter"] = current_list["crdt_states"]["PNCounter"].to_dict()
     flag = False
@@ -120,14 +137,16 @@ def merge_and_update_list(ident, client_list, pn_counter_states, or_map_states):
     if (flag == False):
         data["lists"].append(current_list)
     
-    print("THE DATA IS ", data)
 
     write_file(ident, data)
 
+    print(f"---------------------------------------------------")
     print(f"Sending response to the load balancer {current_list}")
+    print(f"---------------------------------------------------")
     return current_list
 
 def worker_task(ident):
+    print(f"---------------------------------------------------")
     print(f"Starting Worker-{ident}")
     context = zmq.Context()
 
@@ -146,6 +165,7 @@ def worker_task(ident):
     print(f"Worker-{ident} started and connected to backend.")
 
     while True:
+        print(f"---------------------------------------------------")
         print(f"Worker-{ident} polling for events...")
         poller = zmq.Poller()
         poller.register(socket, zmq.POLLIN)
@@ -180,7 +200,7 @@ def worker_task(ident):
                 data = read_file(ident)
 
                 orMapObjectReplicate = ORMap.from_dict(data['ORMapList'], clientId)
-                orMapObjectReplicate = orMapObjectReplicate.join_lists(orMapObject)
+                orMapObjectReplicate = orMapObjectReplicate.join_lists_server(orMapObject)
                 orMapObjectReplicateDict = orMapObjectReplicate.to_dict()
                 data['ORMapList'] = orMapObjectReplicateDict
 
@@ -198,7 +218,7 @@ def worker_task(ident):
                 data = read_file(ident)
 
                 orMapObjectReplicate = ORMap.from_dict(data['ORMapList'], clientId)
-                orMapObjectReplicate = orMapObjectReplicate.join_lists(orMapObject)
+                orMapObjectReplicate = orMapObjectReplicate.join_lists_server(orMapObject)
                 orMapObjectReplicateDict = orMapObjectReplicate.to_dict()
                 data['ORMapList'] = orMapObjectReplicateDict
 
@@ -219,14 +239,20 @@ def worker_task(ident):
         # Handle client backend requests
         if socket in events:
             message = socket.recv_multipart()
+            print(f"---------------------------------------------------")
             print(f"Worker-{ident} received message: {message}")
+            print(f"---------------------------------------------------")
 
             if len(message) < 3:
+                print(f"---------------------------------------------------")
                 print(f"Worker-{ident} received an unexpected message format: {message}")
+                print(f"---------------------------------------------------")
                 continue
 
             address, empty, request = message
+            print(f"---------------------------------------------------")
             print(f"Worker-{ident} received request: {request.decode()}")
+            print(f"---------------------------------------------------")
 
             try:
                 request_data = json.loads(request.decode("utf-8"))
@@ -272,10 +298,18 @@ def worker_task(ident):
                 elif action == "update_list":
                     preference_list = request_data.get("preference_list", [])
 
+                    orMapDictClient = request_data.get("ORMapListData", {})
+
+                    orMapObjectClient = ORMap.from_dict(orMapDictClient, clientId)
+
                     # Update the list on the current worker
                     updated_list = merge_and_update_list(ident, clientList, pnCounterStates, orMapStates)
 
                     orMapObject = ORMap.from_dict(data["ORMapList"], clientId)
+
+                    # Join the ORMap object with the client's ORMap object
+
+                    orMapObject = orMapObject.join_lists_server(orMapObjectClient)
 
                     replication_thread = threading.Thread(
                         target=replicate_to_workers,
@@ -283,8 +317,10 @@ def worker_task(ident):
                         daemon=True
                     )
                     replication_thread.start()
-
-                    response = {"status": "success", "list": updated_list}
+                    print(f"---------------------------------------------------")
+                    print(f"Sending response to the load balancer {updated_list}")
+                    print(f"---------------------------------------------------")
+                    response = {"status": "success", "list": updated_list, "ORMapList" : orMapObject.to_dict()}
 
                     
                 elif action == "create_list":
@@ -298,12 +334,14 @@ def worker_task(ident):
 
                     orMapObject = ORMap.from_dict(data["ORMapList"],clientId)
                     orMapObjectClient = ORMap.from_dict(clientORMapListData,clientId)
-                    orMapObject = orMapObject.join_lists(orMapObjectClient)
+                    orMapObject = orMapObject.join_lists_server(orMapObjectClient)
                     orMapDict = orMapObject.to_dict()
                     data["ORMapList"] = orMapDict   
                     data["lists"].append(current_list)
                     write_file(ident,data)
+                    print(f"---------------------------------------------------")
                     print(f"Sending response to the load balancer {current_list}")
+                    print(f"---------------------------------------------------")
 
                     replication_thread = threading.Thread(
                         target=replicate_to_workers,
@@ -324,11 +362,9 @@ def worker_task(ident):
                     # Update ORMapList
                     orMapObject = ORMap.from_dict(data["ORMapList"], clientId)
                     orMapObjectClient = ORMap.from_dict(clientORMapListData, clientId)
-                    orMapObject = orMapObject.join_lists(orMapObjectClient)
+                    orMapObject = orMapObject.join_lists_server(orMapObjectClient)
                     orMapDict = orMapObject.to_dict()
                     data["ORMapList"] = orMapDict
-
-                    print("OrMapDict is ", orMapDict)
 
                     # Replicate the delete to other workers
                     preference_list = request_data.get("preference_list", [])
@@ -341,8 +377,9 @@ def worker_task(ident):
                     
                     # Write the updated data back to the JSON file
                     write_file(ident, data)
-                    
+                    print(f"---------------------------------------------------")
                     print(f"Sending response to the load balancer {listToRemove} with data {data}")
+                    print(f"---------------------------------------------------")
                     response = {"status": "success", "message": f"List deleted: {listToRemove['id']}", "ORMapListData": orMapDict}
                 else:
                     response = {"status": "error", "message": "Invalid action"}
@@ -352,6 +389,7 @@ def worker_task(ident):
 
             # Send response back to the backend
             socket.send_multipart([address, b"", json.dumps(response).encode("utf-8")])
+            print(f"---------------------------------------------------")
 
 if __name__ == '__main__':
     ident = sys.argv[1]

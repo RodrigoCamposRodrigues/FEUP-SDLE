@@ -121,8 +121,50 @@ class ORMap:
         return self, currentList['items']
     
 
-    def join_lists(self, clientORMapLists):
+    def join_lists_client(self, serverORMapLists):
+        lists_client_has_access = []
+        for key, dots in self.obj['items'].items():
+            lists_client_has_access.append(key)
 
+        for key, dots in self.obj["tombstones"].items():
+            lists_client_has_access.append(key)        
+
+        for key, dots in serverORMapLists.obj['items'].items():
+            if key in lists_client_has_access:
+                if key in self.obj['items']:
+                    self.obj['items'][key].update(dots)
+                elif key not in self.obj["tombstones"]:  # If no tombstone exists, include the item
+                    self.obj['items'][key] = deepcopy(dots)
+                elif key in self.obj["tombstones"]:
+                    for dot in dots:
+                        if dot not in self.obj["tombstones"][key]:
+                            if key not in self.obj['items']:
+                                self.obj['items'][key] = set()
+                            self.obj['items'][key].add(dot)
+            else: continue
+
+        # Merge tombstones
+        for key, dots in serverORMapLists.obj["tombstones"].items():
+            if key in lists_client_has_access:
+                if key not in self.obj["tombstones"]:
+                    self.obj["tombstones"][key] = set()
+                self.obj["tombstones"][key].update(dots)
+            else: continue
+
+
+        # Remove any items that are now deleted
+        for key in list(self.obj['items'].keys()):
+            # Check ALL dots in the tombstone set
+            if key in self.obj["tombstones"] and self.obj["tombstones"][key].issuperset(self.obj['items'][key]):
+                del self.obj['items'][key]
+
+        # Merge causal contexts
+        self.obj['context'].join(serverORMapLists.obj['context'])
+            
+        return self
+
+
+    def join_lists_server(self, clientORMapLists):
         for key, dots in clientORMapLists.obj['items'].items():
             if key in self.obj['items']:
                 self.obj['items'][key].update(dots)
