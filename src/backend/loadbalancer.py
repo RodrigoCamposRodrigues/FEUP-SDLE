@@ -93,6 +93,11 @@ def main():
             preference_list = ring.get_preference_list(str(list_id))
             coordinator_node = ring.get_node(str(list_id))
 
+            print("preference_list: ", preference_list)
+
+            if (preference_list is None):
+                preference_list = []
+                
             preference_list.remove(coordinator_node)
 
             request_data["preference_list"] = preference_list
