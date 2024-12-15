@@ -261,9 +261,11 @@ def worker_task(ident):
                     orMapObject = ORMap.from_dict(data["ORMapList"],clientId)
                     singleListClientOrMapObject = orMapObject.getSingleORMap(current_listId)
                     singlelistClientOrMapDict = singleListClientOrMapObject
+                    if current_listId not in data["ORMapList"]["items"]: 
+                        data["ORMapList"]["items"][current_listId] = {}
                     data["ORMapList"]["items"][current_listId] = singlelistClientOrMapDict
                     if clientId not in data["ORMapList"]["context"]:
-                        data["ORMapList"]["context"][clientId] = set()
+                        data["ORMapList"]["context"][clientId] = list()
                     data["ORMapList"]["context"][clientId] = singlelistClientOrMapDict
                     response = {"status": "success", "list": clientList, "RequestedORMap" : singlelistClientOrMapDict}
 

@@ -76,6 +76,9 @@ def create_list(ident):
     print(f"------------------------------------------------------")
     shopping_list["name"] = input("Enter the name of the list: ")
     num_items = int(input("Enter the number of items in the list: "))
+    while (num_items == 0): 
+        print(f"Please add at least one item to the shopping list")
+        num_items = int(input("Enter the number of items in the list: "))
     map1 = ORMap(ident)
     pncounter1 = PNCounter()
     for i in range(num_items): 
@@ -139,6 +142,41 @@ def check_active_lists(ident, clientLists):
     return data
             
 
+def client_get_list(ident,socket):
+    list_id_input = input("Please enter the id of the list you want to get: ")
+    print("List not found, requesting information to the load balancer")
+    request = {"action": "get_list", "list_id": list_id_input}
+    socket.send(json.dumps(request).encode("utf-8"))
+    reply = socket.recv()
+    reply_decoded = json.loads(reply.decode("utf-8"))
+    print(f"The reply_decoded is {reply_decoded}")
+    current_list = reply_decoded.get("list")
+    serverOrMap = reply_decoded.get("RequestedORMap")
+    if serverOrMap == None: 
+        print(f"The requested list does not exist ! ")
+        return 
+    data = read_file(ident)
+
+    if data["ORMapList"] == {}:
+        data["ORMapList"] = {"items": {}, "tombstones": {}, "context": {}}
+    if list_id_input not in data['ORMapList']["items"]:
+        data['ORMapList']["items"][list_id_input] = {}
+    data['ORMapList']["items"][list_id_input] = serverOrMap
+    clientId = serverOrMap[0].split(":")[0]
+    if clientId not in data['ORMapList']['context']:
+        data['ORMapList']['context'][clientId] = list()
+    data['ORMapList']['context'][clientId] = serverOrMap
+
+    data["lists"].append(current_list)
+
+    write_file(ident, data)
+
+    current_list = read_list(ident, int(list_id_input))
+    check_lists_in_global_counter(ident)
+     
+
+
+
 def client_update_list(ident, socket):
     overview = read_file(ident) 
     if overview['ORMapList'] != {}: 
@@ -158,34 +196,8 @@ def client_update_list(ident, socket):
 
         # Make a request to the loadbalancer to get the list
         if(current_list == None): 
-            print("List not found, requesting information to the load balancer")
-            request = {"action": "get_list", "list_id": list_id_input}
-            socket.send(json.dumps(request).encode("utf-8"))
-            reply = socket.recv()
-            reply_decoded = json.loads(reply.decode("utf-8"))
-            print(f"The reply_decoded is {reply_decoded}")
-            current_list = reply_decoded.get("list")
-            serverOrMap = reply_decoded.get("RequestedORMap")
-
-            data = read_file(ident)
-
-            if data["ORMapList"] == {}:
-                data["ORMapList"] = {"items": {}, "tombstones": {}, "context": {}}
-
-            if list_id_input not in data['ORMapList']["items"]:
-                data['ORMapList']["items"][list_id_input] = {}
-            data['ORMapList']["items"][list_id_input] = serverOrMap
-            clientId = serverOrMap[0].split(":")[0]
-            if clientId not in data['ORMapList']['context']:
-                data['ORMapList']['context'][clientId] = list()
-            data['ORMapList']['context'][clientId] = serverOrMap
-
-            data["lists"].append(current_list)
-
-            write_file(ident, data)
-
-            current_list = read_list(ident, int(list_id_input))
-            check_lists_in_global_counter(ident)
+            print(f"Before updating this list you need first to get all the information about it ! ")
+            return
 
         print(f"---------------------------------------------------")
         print(f"Select the action you want to do with the list {current_list['name']}")
@@ -291,36 +303,8 @@ def client_remove_list(ident, socket):
     current_list = read_list(ident, int(list_id_input))
 
     if current_list == None: 
-        print("List not found, requesting information to the load balancer")
-        request = {"action": "get_list", "list_id": list_id_input}
-        socket.send(json.dumps(request).encode("utf-8"))
-        reply = socket.recv()
-        reply_decoded = json.loads(reply.decode("utf-8"))
-        print(f"The reply_decoded is {reply_decoded}")
-        current_list = reply_decoded.get("list")
-        serverOrMap = reply_decoded.get("RequestedORMap")
-
-        data = read_file(ident)
-
-        if data["ORMapList"] == {}:
-                data["ORMapList"] = {"items": {}, "tombstones": {}, "context": {}}
-
-        
-        print("ORMapList is ", data['ORMapList'])
-        if list_id_input not in data['ORMapList']['items']:
-            data['ORMapList']["items"][list_id_input] = {}
-        data['ORMapList']["items"][list_id_input] = serverOrMap
-        clientId = serverOrMap[0].split(":")[0]
-        if clientId not in data['ORMapList']['context']:
-            data['ORMapList']['context'][clientId] = list()
-        data['ORMapList']['context'][clientId] = serverOrMap
-
-        data["lists"].append(current_list)
-        
-        write_file(ident, data)
-
-        current_list = read_list(ident, int(list_id_input))
-        check_lists_in_global_counter(ident)
+        print(f"Before updating this list you need first to get all the information about it ! ")
+        return
 
     # Read all the lists from the local file
     data = read_file(ident)
@@ -429,7 +413,8 @@ if __name__ == '__main__':
         print(f"1. Create a list")
         print(f"2. Update a list")
         print(f"3. Remove a list")
-        print(f"4. Exit")
+        print(f"4. Get a list")
+        print(f"5. Exit")
         print(f"---------------------------------")
         # Ask for a number between 1 and 4 
         input_user = int(input("Enter the action you want to do: "))
@@ -441,4 +426,6 @@ if __name__ == '__main__':
         elif input_user == 3: 
             client_remove_list(ident, socket)
         elif input_user == 4: 
+            client_get_list(ident,socket)
+        elif input_user == 5:
             break
