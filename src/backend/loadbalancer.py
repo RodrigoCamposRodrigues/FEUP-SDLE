@@ -16,7 +16,7 @@ def check_worker_health(context, workers, removed_workers):
                 
                 health_socket.send(b"PING")
                 
-                if not health_socket.poll(timeout=1000):  # 1-second timeout
+                if not health_socket.poll(timeout=5000):  # 1-second timeout
                     raise Exception(f"Worker {worker} did not respond.")
 
                 reply = health_socket.recv()

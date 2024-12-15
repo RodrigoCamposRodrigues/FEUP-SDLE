@@ -10,7 +10,7 @@ import copy
 orMaps = {}
 global_counter_list = {}
 
-def replicate_to_workers(preference_list, clientList, context, clientId):
+def replicate_to_workers(preference_list, clientList, orMapObject, context, clientId):
     
     print("preference list is ", preference_list)
     for worker in preference_list:
@@ -21,6 +21,7 @@ def replicate_to_workers(preference_list, clientList, context, clientId):
             replicate_request = {
                 "action": "replicate_list",
                 "list": clientList,
+                "orMapDict": orMapObject.to_dict(),
                 "client_id": clientId
             }
 
@@ -172,7 +173,20 @@ def worker_task(ident):
                 if pnCounterStates != {}:
                     pnCounterStates = PNCounter.from_dict(pnCounterStates)
 
+
                 updated_list = merge_and_update_list(ident, clientList, pnCounterStates, orMapStates)
+
+                orMapObject = ORMap.from_dict(message.get("orMapDict"), clientId)
+                data = read_file(ident)
+
+                orMapObjectReplicate = ORMap.from_dict(data['ORMapList'], clientId)
+                orMapObjectReplicate = orMapObjectReplicate.join_lists(orMapObject)
+                orMapObjectReplicateDict = orMapObjectReplicate.to_dict()
+                data['ORMapList'] = orMapObjectReplicateDict
+
+                write_file(ident, data)
+
+
                 response = {"status": "success", "list": clientList}
                 replicate_socket.send_json(response)
             elif action == "replicate_delete":
@@ -189,6 +203,8 @@ def worker_task(ident):
                 data['ORMapList'] = orMapObjectReplicateDict
 
                 write_file(ident, data)
+                response = {"status": "success", "list": clientList}
+                replicate_socket.send_json(response)
             continue
 
 
@@ -257,9 +273,11 @@ def worker_task(ident):
                     # Update the list on the current worker
                     updated_list = merge_and_update_list(ident, clientList, pnCounterStates, orMapStates)
 
+                    orMapObject = ORMap.from_dict(data["ORMapList"], clientId)
+
                     replication_thread = threading.Thread(
                         target=replicate_to_workers,
-                        args=(preference_list, updated_list, context, clientId),
+                        args=(preference_list, updated_list, orMapObject, context, clientId),
                         daemon=True
                     )
                     replication_thread.start()
@@ -287,7 +305,7 @@ def worker_task(ident):
 
                     replication_thread = threading.Thread(
                         target=replicate_to_workers,
-                        args=(preference_list, current_list, context, clientId),
+                        args=(preference_list, current_list, orMapObject, context, clientId),
                         daemon=True
                     )
 
