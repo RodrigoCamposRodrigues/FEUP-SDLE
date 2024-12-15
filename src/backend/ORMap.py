@@ -171,3 +171,9 @@ class ORMap:
         orMapInstance.obj["tombstones"] = {key: set(dots) for key, dots in data.get("tombstones", {}).items()}
         orMapInstance.obj['context'] = DotContext.from_dict(data.get('context', {}))
         return orMapInstance
+    
+    def getSingleORMap(self, key): 
+        if key in self.obj["items"]:
+            causalContext = self.obj["items"][key]
+            return list(causalContext)
+        return None

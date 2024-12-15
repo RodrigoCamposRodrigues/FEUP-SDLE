@@ -33,6 +33,29 @@ def replicate_to_workers(preference_list, clientList, context, clientId):
         finally:
             replicate_socket.close()
 
+def replicate_delete_to_workers(preference_list, orMapObject, context, clientId):
+    print("preference list is ", preference_list)
+    for worker in preference_list:
+        print(f"Replicating to worker {worker}")
+        replicate_socket = context.socket(zmq.REQ)
+        replicate_socket.connect(f"ipc://{worker}.replicate.ipc")
+        try:
+            replicate_request = {
+                "action": "replicate_delete",
+                "orMapDict": orMapObject.to_dict(),
+                "client_id": clientId
+            }
+
+            replicate_socket.send_json(replicate_request)
+            print(f"Sent replicate_list to worker {worker}")
+            replicate_socket.recv()  
+            print(f"Replicated update to worker {worker}")
+        except Exception as e:
+            print(f"Failed to replicate to worker {worker}: {e}")
+        finally:
+            replicate_socket.close()
+
+
 def read_list(ident, id):
     json_file = 'server/server_list_'+ ident + ".json"
     with open(json_file, 'r') as file:
@@ -152,7 +175,22 @@ def worker_task(ident):
                 updated_list = merge_and_update_list(ident, clientList, pnCounterStates, orMapStates)
                 response = {"status": "success", "list": clientList}
                 replicate_socket.send_json(response)
+            elif action == "replicate_delete":
+                clientId = message.get("client_id")
+                orMapDict = message.get("orMapDict")
+                print("ormapdict is ", orMapDict)
+                print("clientId is ", clientId)
+                orMapObject = ORMap.from_dict(orMapDict, clientId)
+                data = read_file(ident)
+
+                orMapObjectReplicate = ORMap.from_dict(data['ORMapList'], clientId)
+                orMapObjectReplicate = orMapObjectReplicate.join_lists(orMapObject)
+                orMapObjectReplicateDict = orMapObjectReplicate.to_dict()
+                data['ORMapList'] = orMapObjectReplicateDict
+
+                write_file(ident, data)
             continue
+
 
         # Handle health-check requests
         if health_socket in events:
@@ -203,7 +241,15 @@ def worker_task(ident):
                     # Load the list from the json file
                     current_listId = request_data.get("list_id")
                     clientList = read_list(ident, current_listId)
-                    response = {"status": "success", "list": clientList}
+                    data = read_file(ident) 
+                    orMapObject = ORMap.from_dict(data["ORMapList"],clientId)
+                    singleListClientOrMapObject = orMapObject.getSingleORMap(current_listId)
+                    singlelistClientOrMapDict = singleListClientOrMapObject
+                    data["ORMapList"]["items"][current_listId] = singlelistClientOrMapDict
+                    if clientId not in data["ORMapList"]["context"]:
+                        data["ORMapList"]["context"][clientId] = set()
+                    data["ORMapList"]["context"][clientId] = singlelistClientOrMapDict
+                    response = {"status": "success", "list": clientList, "RequestedORMap" : singlelistClientOrMapDict}
 
                 elif action == "update_list":
                     preference_list = request_data.get("preference_list", [])
@@ -261,6 +307,17 @@ def worker_task(ident):
                     orMapObject = orMapObject.join_lists(orMapObjectClient)
                     orMapDict = orMapObject.to_dict()
                     data["ORMapList"] = orMapDict
+
+                    print("OrMapDict is ", orMapDict)
+
+                    # Replicate the delete to other workers
+                    preference_list = request_data.get("preference_list", [])
+                    replication_thread = threading.Thread(
+                        target=replicate_delete_to_workers,
+                        args=(preference_list, orMapObject, context, clientId),
+                        daemon=True
+                    )
+                    replication_thread.start()
                     
                     # Write the updated data back to the JSON file
                     write_file(ident, data)
