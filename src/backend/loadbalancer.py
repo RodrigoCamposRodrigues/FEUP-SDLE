@@ -16,7 +16,7 @@ def check_worker_health(context, workers, removed_workers):
                 
                 health_socket.send(b"PING")
                 
-                if not health_socket.poll(timeout=5000):  # 1-second timeout
+                if not health_socket.poll(timeout=2000):  # 1-second timeout
                     raise Exception(f"Worker {worker} did not respond.")
 
                 reply = health_socket.recv()
@@ -63,6 +63,7 @@ def main():
 
     while True:
         sockets = dict(poller.poll(timeout=1000))
+        ring = HashRing(workers)
         if not sockets:
             continue
 
@@ -72,7 +73,6 @@ def main():
             print(f"Received response from worker: {request}")
             worker, empty, client = request[:3]
             workers.add(worker.decode("utf-8"))
-            ring = HashRing(workers)
             print(f"Workers {workers}")
 
             if workers and not backend_ready:
@@ -92,11 +92,15 @@ def main():
             preference_list = ring.get_preference_list(str(list_id))
             coordinator_node = ring.get_node(str(list_id))
 
+            if (coordinator_node is None):
+                print("No available coordinator node")
+                continue
+
             print("preference_list: ", preference_list)
 
             if (preference_list is None):
                 preference_list = []
-                
+                                
             preference_list.remove(coordinator_node)
 
             request_data["preference_list"] = preference_list
